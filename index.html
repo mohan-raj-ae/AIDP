@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Interactive Data Plotter - v1.2.0</title>
+
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/css/tom-select.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/js/tom-select.complete.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="text-slate-300">
+
+  <div id="notification-container"></div>
+
+  <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-screen-2xl">
+    <header class="mb-6 flex justify-between items-center">
+      <div class="text-center flex-grow">
+        <h1 class="text-4xl font-bold text-slate-100">Advanced Interactive Data Plotter</h1>
+        <p class="text-slate-400 mt-2 max-w-3xl mx-auto">
+          Version 1.2.0: An intuitive tool to load, visualize, and analyze your data.
+        </p>
+      </div>
+    </header>
+
+    <div class="flex flex-col gap-6">
+      <div class="card flex flex-col flex-grow">
+          <div id="tabsContainer" class="tabs"></div>
+          <div id="plot" class="flex-grow min-h-[600px] w-full mt-4"></div>
+          <div id="slopeSection" class="mt-6 hidden">
+            <h3 class="text-lg font-bold text-slate-200 mb-2">Slope Calculation</h3>
+            <div id="slopeInfo" class="bg-sky-900 border-l-4 border-sky-500 text-sky-200 p-4 mb-4 rounded-r-lg text-sm">
+                <p><b>Slope calculation is active.</b> Click and drag on the plot to select a data range. Double-click to clear selection.</p>
+            </div>
+            <div id="slopeResults" class="filter-group" style="max-height: 200px; overflow-y:auto;">
+                <div class="empty-state">No range selected yet.</div>
+            </div>
+          </div>
+        </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1 flex flex-col gap-6">
+            <div class="card">
+              <h2 class="text-xl font-bold text-slate-200 mb-4">1. Load Data</h2>
+              <div class="flex-grow">
+                  <label for="dataInput" class="block font-medium mb-1 text-sm">Paste Tab-Delimited Data:</label>
+                  <textarea id="dataInput" spellcheck="false" aria-label="Raw tab delimited data input" class="form-textarea w-full h-48 p-2 border rounded-lg font-mono text-sm resize-y"></textarea>
+              </div>
+              <div class="mt-4 flex flex-col gap-3">
+                  <div class="file-input-wrapper btn btn-secondary w-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                      <span>Upload File (.tsv, .csv, .xlsx)</span>
+                      <input type="file" accept=".txt,.tsv,.csv,.xlsx,.xls" id="fileInput" />
+                  </div>
+                  <button id="loadDataBtn" class="btn btn-primary w-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                      <span>Load Pasted Data</span>
+                  </button>
+              </div>
+            </div>
+
+            <div class="card" id="dataPreviewCard">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">Data Preview</h2>
+                <div id="dataPreviewContainer">
+                    <div class="empty-state">Load data to see a preview.</div>
+                </div>
+            </div>
+            
+            <div class="card" id="dataStatsCard">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">Data Statistics</h2>
+                <div id="dataStatsContainer">
+                    <div class="empty-state">Load data to see statistics.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">Actions</h2>
+                <div class="flex flex-col gap-3">
+                    <button id="exportPlotBtn" class="btn btn-green w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        <span>Export Plot as PNG</span>
+                    </button>
+                    <button id="exportPlotSVGBtn" class="btn btn-green w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        <span>Export Plot as SVG</span>
+                    </button>
+                    <button id="exportPlotHTMLBtn" class="btn btn-green w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        <span>Export as Standalone HTML</span>
+                    </button>
+                    <button id="exportDataBtn" class="btn btn-orange w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16"x2="8" y1="17" y2="17"/></svg>
+                        <span>Export Filtered Data (CSV)</span>
+                    </button>
+                    <button id="saveToReportBtn" class="btn btn-purple w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        <span>Save to Report</span>
+                    </button>
+                    <button id="generateReportBtn" class="btn btn-primary w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <span>Generate PDF Report</span>
+                    </button>
+                    <hr class="border-slate-700 my-2">
+                    <button id="saveSessionBtn" class="btn btn-secondary w-full" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                        <span>Save Session</span>
+                    </button>
+                    <div class="file-input-wrapper btn btn-secondary w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                        <span>Load Session</span>
+                        <input type="file" accept=".json" id="loadSessionInput" />
+                    </div>
+
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">Saved Report Views</h2>
+                <div id="savedViewsList" class="filter-group" style="max-height: 200px; overflow-y:auto;">
+                <div class="empty-state">No saved views yet.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            <div class="card">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-slate-200">2. Configure Plot</h2>
+                    <button id="addPlotTabBtn" class="btn btn-secondary" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Add Plot Tab</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                    <label for="xAxisSelect" class="block font-medium mb-1 text-sm">X-Axis:</label>
+                    <select id="xAxisSelect" disabled placeholder="Select X-Axis..."></select>
+                    </div>
+                    <div>
+                    <label for="leftYAxisSelect" class="block font-medium mb-1 text-sm">Left Y-Axis(s):</label>
+                    <select id="leftYAxisSelect" disabled multiple placeholder="Select Left Y-Axis(s)..."></select>
+                    </div>
+                    <div>
+                    <label for="rightYAxisSelect" class="block font-medium mb-1 text-sm">Right Y-Axis(s):</label>
+                    <select id="rightYAxisSelect" disabled multiple placeholder="Select Right Y-Axis(s)..."></select>
+                    </div>
+                    <div>
+                    <label for="groupingSelect" class="block font-medium mb-1 text-sm">Group By:</label>
+                    <select id="groupingSelect" multiple disabled placeholder="Select Group By..."></select>
+                    </div>
+                    <div class="lg:col-span-2">
+                    <label for="chartTypeSelect" class="block font-medium mb-1 text-sm">Plot Type:</label>
+                    <select id="chartTypeSelect" disabled class="form-select">
+                        <option value="box" selected>Box Plot</option>
+                        <option value="violin">Violin Plot</option>
+                        <option value="bar">Bar Plot</option>
+                        <option value="scatter">Scatter Plot</option>
+                        <option value="line">Line Plot</option>
+                        <option value="histogram">Histogram</option>
+                    </select>
+                    <div class="flex items-center mt-4" id="outlierToggleContainer">
+                        <input type="checkbox" id="outlierToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" checked />
+                        <label for="outlierToggle" class="ml-2 block text-sm font-medium">Show Outliers</label>
+                    </div>
+                     <div class="flex items-center mt-2" id="dataPointsToggleContainer">
+                        <input type="checkbox" id="showDataPointsToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" />
+                        <label for="showDataPointsToggle" class="ml-2 block text-sm font-medium">Show Data Point Count (n)</label>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">3. Filters</h2>
+                <div id="filtersContainer" class="filter-group">
+                    <div class="empty-state">Load data to see available filters.</div>
+                </div>
+            </div>
+            <div class="card" id="customizationCard">
+                <h2 class="text-xl font-bold text-slate-200 mb-4">4. Plot Customization</h2>
+                <div class="flex border-b border-slate-700 mb-4" id="customizationTabsContainer">
+                    <button class="custom-tab active" data-tab="titles">Titles & Labels</button>
+                    <button class="custom-tab" data-tab="legends">Legends</button>
+                    <button class="custom-tab" data-tab="annotations">Annotations</button>
+                </div>
+
+                <div id="titlesPanel" class="custom-panel grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-full">
+                        <label for="customTitle" class="block font-medium mb-1 text-sm">Plot Title:</label>
+                        <input type="text" id="customTitle" class="form-input" placeholder="Enter custom plot title">
+                    </div>
+                    <div id="axisTitlesContainer" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                      </div>
+                </div>
+
+                <div id="legendsPanel" class="custom-panel hidden">
+                    <div id="legendEditorContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 max-h-60 overflow-y-auto">
+                        <div class="empty-state col-span-full">Plot must be generated to see legends.</div>
+                    </div>
+                </div>
+
+                <div id="annotationsPanel" class="custom-panel hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="border-r border-slate-700 pr-4">
+                            <h3 class="font-semibold text-slate-200 mb-2">Add New Annotation</h3>
+                            <div class="flex flex-col gap-2">
+                                <select id="annotationAxis" class="form-select text-sm"><option value="y">Horizontal (Y-Axis)</option><option value="x">Vertical (X-Axis)</option></select>
+                                <input type="number" id="annotationValue" placeholder="Value (e.g., 50)" class="form-input text-sm">
+                                <input type="text" id="annotationText" placeholder="Optional Label" class="form-input text-sm">
+                                <div class="flex items-center gap-2">
+                                    <select id="annotationStyle" class="form-select text-sm"><option value="solid">Solid</option><option value="dash">Dash</option><option value="dot">Dot</option><option value="dashdot">Dash-Dot</option></select>
+                                    <input type="color" id="annotationColor" value="#38bdf8" class="p-1 h-10 w-16 block bg-slate-800 border border-slate-600 cursor-pointer rounded-lg">
+                                </div>
+                                <button id="addAnnotationBtn" class="btn btn-secondary w-full mt-1 text-sm">Add Line</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-200 mb-2">Current Annotations</h3>
+                            <div id="annotationsListContainer" class="max-h-48 overflow-y-auto">
+                            <div class="empty-state">No annotations yet.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
