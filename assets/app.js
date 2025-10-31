@@ -7,6 +7,7 @@ let plotTabs = [];
 let activeTabId = null;
 let savedReportViews = [];
 let currentTheme = 'dark'; // Dark by default
+let isDrawingPlot = false; // <--- ADD THIS LINE
 
 // NEW: Tom Select Instances
 let tomSelects = {
@@ -121,7 +122,10 @@ function initializeTomSelects() {
     tomSelects.grouping = new TomSelect(dom.groupingSelect, multiSelectSettings);
 
     // Add change listeners
-    const onChange = () => saveTabStateAndDraw(activeTabId);
+    const onChange = () => {
+        if (isDrawingPlot) return; // <--- ADD THIS GUARD CLAUSE
+        saveTabStateAndDraw(activeTabId);
+    };
     tomSelects.xAxis.on('change', onChange);
     tomSelects.leftYAxis.on('change', onChange);
     tomSelects.rightYAxis.on('change', onChange);
@@ -637,134 +641,151 @@ function buildTracesAndLayout(data, xKey, leftYKeys, rightYKeys, groupingKeys, c
 }
 
 function drawPlot(tab) {
-    if (!parsedData.length) {
-        Plotly.purge(dom.plotDiv);
-        return;
-    }
-    tab = tab || plotTabs.find(t => t.id === activeTabId);
-    if (!tab) return;
-    
-    // NEW: Update UI based on chart type
-    updateUIForChartType(tab.chartType);
-    
-    const xKey = tab.xAxis;
-    const leftYKeys = tab.leftYAxes;
-    const rightYKeys = tab.rightYAxes;
-
-    if (!xKey && tab.chartType !== 'histogram') {
-        Plotly.purge(dom.plotDiv);
-        dom.plotDiv.innerHTML = `<div class="empty-state">Please select at least one X and one Y axis to generate a plot.</div>`;
-        return;
-    }
-    if (leftYKeys.length === 0 && rightYKeys.length === 0) {
-         Plotly.purge(dom.plotDiv);
-        dom.plotDiv.innerHTML = `<div class="empty-state">Please select at least one Y axis to generate a plot.</div>`;
-        return;
-    }
-
-    const filteredData = filterData(parsedData);
-    if (!filteredData.length) {
-        Plotly.purge(dom.plotDiv);
-        dom.plotDiv.innerHTML = `<div class="empty-state">Your current filters result in no data to display. Please adjust your filters.</div>`;
-        return;
-    }
-
-    const { traces, layoutYAxes } = buildTracesAndLayout(filteredData, xKey, leftYKeys, rightYKeys, tab.grouping, tab.chartType, tab.showOutliers, tab.showDataPoints, tab.legendStyles);
-    
-    const isDark = currentTheme === 'dark';
-    const bgColor = isDark ? '#0f172a' : '#ffffff';
-    const textColor = isDark ? '#e2e8f0' : '#1e293b';
-    const gridColor = isDark ? '#334155' : '#e2e8f0';
-
-    const layout = {
-        title: { text: `Title`, font: { size: 18, family: 'Inter, sans-serif', color: textColor } },
-        xaxis: { title: { text: xKey }, tickangle: -45, domain: [0.1 * leftYKeys.length, 1 - 0.1 * rightYKeys.length], color: textColor, gridcolor: gridColor, linecolor: gridColor },
-        margin: { t: 50, b: 120, l: 60, r: 60 },
-        height: 600,
-        boxmode: ['box', 'violin', 'bar'].includes(tab.chartType) ? 'group' : undefined,
-        legend: { orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center', font: { color: textColor } },
-        plot_bgcolor: bgColor,
-        paper_bgcolor: bgColor
-    };
-    Object.assign(layout, layoutYAxes);
-    
-    // Apply dark mode to all axes
-    Object.keys(layout).filter(k => k.startsWith('yaxis') || k.startsWith('xaxis')).forEach(axisKey => {
-        layout[axisKey].color = textColor;
-        layout[axisKey].gridcolor = gridColor;
-        layout[axisKey].linecolor = gridColor;
-    });
-    
-    const allYKeys = [...leftYKeys, ...rightYKeys];
-    
-    let defaultTitle = '';
-    if (tab.chartType === 'histogram') {
-        defaultTitle = `Histogram of ${leftYKeys[0]}`;
-    } else {
-        defaultTitle = `${capitalize(tab.chartType)} Plot: ${allYKeys.join(', ')} vs ${xKey}`;
-    }
-
-    layout.title.text = tab.customTitles.title || defaultTitle;
-    
-    if (layout.xaxis.title) {
-        layout.xaxis.title.text = tab.customTitles.xaxis || layout.xaxis.title.text || xKey;
-    }
-    
-    Object.keys(layout).filter(k => k.startsWith('yaxis')).forEach(axisKey => {
-        if (!layout[axisKey].title) return;
-        const axisName = axisKey.replace('yaxis', 'y');
-        const customTitleKey = `${axisName}axis`;
-        const originalTitle = layout[axisKey].title.text;
-        if (tab.customTitles[customTitleKey] !== undefined) {
-            layout[axisKey].title.text = tab.customTitles[customTitleKey] || originalTitle;
-        }
-    });
-    
-    layout.shapes = tab.annotations.map(a => ({
-        type: 'line',
-        x0: a.axis === 'y' ? 0 : a.value, y0: a.axis === 'x' ? 0 : a.value,
-        x1: a.axis === 'y' ? 1 : a.value, y1: a.axis === 'x' ? 1 : a.value,
-        xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
-        line: { color: a.color, width: 2, dash: a.style }
-    }));
-
-    const manualAnnotations = tab.annotations.filter(a => a.text).map(a => ({
-        x: a.axis === 'y' ? 0.98 : a.value, y: a.axis === 'x' ? 0.98 : a.value,
-        xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
-        text: a.text, showarrow: false, xanchor: 'right', yanchor: 'top', font: { color: a.color }
-    }));
-    
-    layout.annotations = manualAnnotations;
-
-    const xIsNum = isNumericArray(filteredData.map(d => d[xKey]));
-    const yIsNum = allYKeys.every(yKey => isNumericArray(filteredData.map(d => d[yKey])));
-    const isSlopeEligible = (tab.chartType === 'line' || tab.chartType === 'scatter') && xIsNum && yIsNum;
-
-    layout.dragmode = isSlopeEligible ? 'select' : 'zoom';
-    dom.slopeSection.classList.toggle('hidden', !isSlopeEligible);
-    if(isSlopeEligible) dom.slopeResults.innerHTML = '<div class="empty-state">No range selected yet.</div>';
-
-    tab.plotTraces = traces;
-    tab.plotLayout = layout;
+    // --- FIX: Set mutex flag to prevent recursive calls ---
+    if (isDrawingPlot) return; 
+    isDrawingPlot = true;
 
     try {
-        Plotly.newPlot(dom.plotDiv, traces, layout, { responsive: true, displaylogo: false });
-        renderCustomizationPanel(tab);
-    } catch (e) {
-        const errorCode = '[E_PLOT_001]';
-        console.error(`${errorCode}: Plotly failed to render.`, e.stack, traces, layout);
-        showNotification('Plotting Error', `${errorCode}: ${e.message}`, 'error');
-        dom.plotDiv.innerHTML = `<div class="empty-state">${errorCode}: Plotly failed to render. Check console for details.</div>`;
-    }
-    
-    dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_selected');
-    dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_deselect');
-    
-    if (isSlopeEligible) {
-        dom.plotDiv.on('plotly_selected', handleSelection);
-        dom.plotDiv.on('plotly_deselect', () => {
-            dom.slopeResults.innerHTML = '<div class="empty-state">Selection cleared.</div>';
+        if (!parsedData.length) {
+            Plotly.purge(dom.plotDiv);
+            return; // Exit function
+        }
+        tab = tab || plotTabs.find(t => t.id === activeTabId);
+        if (!tab) {
+            return; // Exit function
+        }
+        
+        // NEW: Update UI based on chart type
+        // This is safe now, as the flag is set
+        updateUIForChartType(tab.chartType);
+        
+        const xKey = tab.xAxis;
+        const leftYKeys = tab.leftYAxes;
+        const rightYKeys = tab.rightYAxes;
+
+        if (!xKey && tab.chartType !== 'histogram') {
+            Plotly.purge(dom.plotDiv);
+            dom.plotDiv.innerHTML = `<div class="empty-state">Please select at least one X and one Y axis to generate a plot.</div>`;
+            return; // Exit function
+        }
+        if (leftYKeys.length === 0 && rightYKeys.length === 0) {
+            Plotly.purge(dom.plotDiv);
+            dom.plotDiv.innerHTML = `<div class="empty-state">Please select at least one Y axis to generate a plot.</div>`;
+            return; // Exit function
+        }
+
+        const filteredData = filterData(parsedData);
+        if (!filteredData.length) {
+            Plotly.purge(dom.plotDiv);
+            dom.plotDiv.innerHTML = `<div class="empty-state">Your current filters result in no data to display. Please adjust your filters.</div>`;
+            return; // Exit function
+        }
+
+        const { traces, layoutYAxes } = buildTracesAndLayout(filteredData, xKey, leftYKeys, rightYKeys, tab.grouping, tab.chartType, tab.showOutliers, tab.showDataPoints, tab.legendStyles);
+        
+        const isDark = currentTheme === 'dark';
+        const bgColor = isDark ? '#0f172a' : '#ffffff';
+        const textColor = isDark ? '#e2e8f0' : '#1e293b';
+        const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+        const layout = {
+            title: { text: `Title`, font: { size: 18, family: 'Inter, sans-serif', color: textColor } },
+            xaxis: { title: { text: xKey }, tickangle: -45, domain: [0.1 * leftYKeys.length, 1 - 0.1 * rightYKeys.length], color: textColor, gridcolor: gridColor, linecolor: gridColor },
+            margin: { t: 50, b: 120, l: 60, r: 60 },
+            height: 600,
+            boxmode: ['box', 'violin', 'bar'].includes(tab.chartType) ? 'group' : undefined,
+            legend: { orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center', font: { color: textColor } },
+            plot_bgcolor: bgColor,
+            paper_bgcolor: bgColor
+        };
+        Object.assign(layout, layoutYAxes);
+        
+        // Apply dark mode to all axes
+        Object.keys(layout).filter(k => k.startsWith('yaxis') || k.startsWith('xaxis')).forEach(axisKey => {
+            layout[axisKey].color = textColor;
+            layout[axisKey].gridcolor = gridColor;
+            layout[axisKey].linecolor = gridColor;
         });
+        
+        const allYKeys = [...leftYKeys, ...rightYKeys];
+        
+        let defaultTitle = '';
+        if (tab.chartType === 'histogram') {
+            defaultTitle = `Histogram of ${leftYKeys[0]}`;
+        } else {
+            defaultTitle = `${capitalize(tab.chartType)} Plot: ${allYKeys.join(', ')} vs ${xKey}`;
+        }
+
+        layout.title.text = tab.customTitles.title || defaultTitle;
+        
+        if (layout.xaxis.title) {
+            layout.xaxis.title.text = tab.customTitles.xaxis || layout.xaxis.title.text || xKey;
+        }
+        
+        Object.keys(layout).filter(k => k.startsWith('yaxis')).forEach(axisKey => {
+            if (!layout[axisKey].title) return;
+            const axisName = axisKey.replace('yaxis', 'y');
+            const customTitleKey = `${axisName}axis`;
+            const originalTitle = layout[axisKey].title.text;
+            if (tab.customTitles[customTitleKey] !== undefined) {
+                layout[axisKey].title.text = tab.customTitles[customTitleKey] || originalTitle;
+            }
+        });
+        
+        layout.shapes = tab.annotations.map(a => ({
+            type: 'line',
+            x0: a.axis === 'y' ? 0 : a.value, y0: a.axis === 'x' ? 0 : a.value,
+            x1: a.axis === 'y' ? 1 : a.value, y1: a.axis === 'x' ? 1 : a.value,
+            xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
+            line: { color: a.color, width: 2, dash: a.style }
+        }));
+
+        const manualAnnotations = tab.annotations.filter(a => a.text).map(a => ({
+            x: a.axis === 'y' ? 0.98 : a.value, y: a.axis === 'x' ? 0.98 : a.value,
+            xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
+            text: a.text, showarrow: false, xanchor: 'right', yanchor: 'top', font: { color: a.color }
+        }));
+        
+        layout.annotations = manualAnnotations;
+
+        const xIsNum = isNumericArray(filteredData.map(d => d[xKey]));
+        const yIsNum = allYKeys.every(yKey => isNumericArray(filteredData.map(d => d[yKey])));
+        const isSlopeEligible = (tab.chartType === 'line' || tab.chartType === 'scatter') && xIsNum && yIsNum;
+
+        layout.dragmode = isSlopeEligible ? 'select' : 'zoom';
+        dom.slopeSection.classList.toggle('hidden', !isSlopeEligible);
+        if(isSlopeEligible) dom.slopeResults.innerHTML = '<div class="empty-state">No range selected yet.</div>';
+
+        tab.plotTraces = traces;
+        tab.plotLayout = layout;
+
+        try {
+            Plotly.newPlot(dom.plotDiv, traces, layout, { responsive: true, displaylogo: false });
+            renderCustomizationPanel(tab);
+        } catch (e) {
+            const errorCode = '[E_PLOT_001]';
+            console.error(`${errorCode}: Plotly failed to render.`, e.stack, traces, layout);
+            showNotification('Plotting Error', `${errorCode}: ${e.message}`, 'error');
+            dom.plotDiv.innerHTML = `<div class="empty-state">${errorCode}: Plotly failed to render. Check console for details.</div>`;
+        }
+        
+        dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_selected');
+        dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_deselect');
+        
+        if (isSlopeEligible) {
+            dom.plotDiv.on('plotly_selected', handleSelection);
+            dom.plotDiv.on('plotly_deselect', () => {
+                dom.slopeResults.innerHTML = '<div class="empty-state">Selection cleared.</div>';
+            });
+        }
+    } catch (e) {
+        // Add a catch-all for the whole function
+        const errorCode = '[E_PLOT_005]';
+        console.error(`${errorCode}: Unknown error during drawPlot.`, e.stack);
+        showNotification('Plotting Error', `${errorCode}: ${e.message}`, 'error');
+    } finally {
+        // --- FIX: ALWAYS clear the flag when the function exits ---
+        isDrawingPlot = false;
     }
 }
     
