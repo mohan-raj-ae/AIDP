@@ -1,0 +1,281 @@
+:root {
+  /* NEW: Tech Dashboard Theme (Dark by Default) */
+  --bg-primary: #0f172a; /* slate-900 (Card Background) */
+  --bg-secondary: #020617; /* slate-950 (Body Background) */
+  --border-color: #334155; /* slate-700 (Borders) */
+  --text-primary: #e2e8f0; /* slate-200 (Primary Text) */
+  --text-secondary: #94a3b8; /* slate-400 (Secondary Text) */
+  --text-heading: #f1f5f9; /* slate-100 (Headings) */
+  --text-accent: #38bdf8; /* sky-400 (Accent Color) */
+  --accent-hover: #0ea5e9; /* sky-500 (Accent Hover) */
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+.card {
+  background-color: var(--bg-primary);
+  border-radius: 0.75rem; /* rounded-xl */
+  /* Updated border and shadow for glow effect */
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--text-accent) 10%, transparent);
+  padding: 1.5rem; /* p-6 */
+  transition: background-color 0.3s;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* gap-2 */
+  padding: 0.625rem 1rem; /* py-2.5 px-4 */
+  border-radius: 0.5rem; /* rounded-lg */
+  font-weight: 600; /* font-semibold */
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === Modernized Button Colors (Tech Theme) === */
+.btn-primary {
+  background-color: var(--text-accent);
+  color: #020617; /* Dark text for high contrast */
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+.btn-secondary {
+  background-color: transparent;
+  color: var(--text-accent);
+  border: 1px solid var(--text-accent);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--text-accent) 15%, transparent);
+}
+.btn-green {
+    background-color: #2dd4bf; /* teal-400 */
+    color: #020617;
+}
+.btn-green:hover:not(:disabled) {
+    background-color: #14b8a6; /* teal-500 */
+}
+.btn-purple {
+    /* Changed to Yellow from image */
+    background-color: #facc15; /* yellow-400 */
+    color: #020617;
+}
+.btn-purple:hover:not(:disabled) {
+    background-color: #eab308; /* yellow-500 */
+}
+.btn-orange {
+    /* Changed to Red from image */
+    background-color: #f87171; /* red-400 */
+    color: #020617;
+}
+.btn-orange:hover:not(:disabled) {
+    background-color: #ef4444; /* red-500 */
+}
+
+.tab {
+  padding: 0.5rem 1.25rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem 0.5rem 0 0;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.tab.active {
+  background: var(--bg-primary);
+  color: var(--text-accent);
+  font-weight: 700;
+  border-color: var(--text-accent);
+}
+#tabsContainer {
+  border-bottom: 1px solid var(--border-color);
+}
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+.file-input-wrapper input[type=file] {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+.custom-tab {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.custom-tab.active {
+  color: var(--text-accent);
+  font-weight: 700;
+  border-color: var(--text-accent);
+}
+.custom-panel {
+    padding-top: 1rem;
+}
+
+/* === Modernized Notifications === */
+#notification-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.notification {
+    display: flex;
+    align-items: start;
+    gap: 0.75rem;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    transform: translateX(120%);
+    animation: slideIn 0.5s forwards, slideOut 0.5s 4.5s forwards;
+    background-color: var(--bg-primary);
+    border-left-width: 4px;
+}
+.notification-success { border-color: #22c55e; }
+.notification-error { border-color: #ef4444; }
+.notification-icon { flex-shrink: 0; }
+.notification-content p { margin: 0; }
+.notification-title { font-weight: 600; color: var(--text-heading); }
+.notification-success .notification-title { color: #4ade80; }
+.notification-error .notification-title { color: #f87171; }
+.notification-message { color: var(--text-primary); font-size: 0.9rem; }
+
+@keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+@keyframes slideOut { from { transform: translateX(0); } to { transform: translateX(120%); } }
+
+/* V1 Stats/Preview Styles (Dark Mode compatible) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+.stat-card {
+  background: var(--bg-secondary);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--text-accent);
+}
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.preview-table th, .preview-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+.preview-table th {
+  background-color: var(--bg-secondary);
+}
+.preview-table-wrapper {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+
+/* Form element dark mode (now default) */
+.form-input, .form-select, .form-textarea {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-accent) 20%, transparent);
+  outline: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.375rem;
+}
+
+/* === NEW: Tom Select Dark Theme Override === */
+.ts-control {
+  background-color: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.625rem 0.75rem !important; /* Match .btn padding */
+}
+.ts-wrapper.focus .ts-control, .ts-wrapper.focus.input-active .ts-control {
+  border-color: var(--text-accent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-accent) 20%, transparent) !important;
+}
+.ts-dropdown, .ts-dropdown.plugin-optgroup_columns {
+  background-color: var(--bg-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+.ts-dropdown .option {
+  color: var(--text-primary) !important;
+  padding: 0.5rem 0.75rem;
+}
+.ts-dropdown .option:hover, .ts-dropdown .active {
+  background-color: var(--bg-secondary) !important;
+}
+.ts-control .item, .ts-wrapper.multi .ts-control > div {
+  background: var(--text-accent) !important;
+  color: #020617 !important; /* Dark text */
+  border: 0 !important;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-weight: 500;
+}
+.ts-wrapper.multi .ts-control [data-value] .remove {
+  border-left: 1px solid #020617 !important;
+  margin-left: 0.5rem;
+}
+.ts-wrapper.multi .ts-control [data-value] .remove:hover {
+  background: var(--accent-hover) !important;
+}
+.ts-control .item.active {
+    background-color: var(--accent-hover) !important;
+}
+.ts-input::placeholder {
+    color: var(--text-secondary);
+}
+.ts-wrapper.disabled .ts-control {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
