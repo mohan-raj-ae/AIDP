@@ -3,21 +3,399 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Advanced Interactive Data Plotter - v1.2.0</title>
-
+  <title>Advanced Interactive Data Plotter - 1.2.1 (UI Fixes)</title>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/css/tom-select.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/js/tom-select.complete.min.js"></script>
-  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { /* Light theme by default */
+      --bg-primary: #ffffff; /* white */
+      --bg-secondary: #f1f5f9; /* slate-100 */
+      --border-color: #cbd5e1; /* slate-300 */
+      --text-primary: #334155; /* slate-700 */
+      --text-secondary: #64748b; /* slate-500 */
+      --text-heading: #0f172a; /* slate-900 */
+      --text-accent: #0ea5e9; /* sky-500 */
+      --accent-hover: #0284c7; /* sky-600 */
+    }
 
-  <link rel="stylesheet" href="assets/style.css" />
+    html.dark {
+      /* Tech Dashboard Theme (Dark) */
+      --bg-primary: #0f172a; /* slate-900 (Card Background) */
+      --bg-secondary: #020617; /* slate-950 (Body Background) */
+      --border-color: #334155; /* slate-700 (Borders) */
+      --text-primary: #e2e8f0; /* slate-200 (Primary Text) */
+      --text-secondary: #94a3b8; /* slate-400 (Secondary Text) */
+      --text-heading: #f1f5f9; /* slate-100 (Headings) */
+      --text-accent: #38bdf8; /* sky-400 (Accent Color) */
+      --accent-hover: #0ea5e9; /* sky-500 (Accent Hover) */
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .card {
+      background-color: var(--bg-primary);
+      border-radius: 0.75rem; /* rounded-xl */
+      /* Updated border and shadow for glow effect */
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 15px color-mix(in srgb, var(--text-accent) 10%, transparent);
+      padding: 1.5rem; /* p-6 */
+      transition: background-color 0.3s;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem; /* gap-2 */
+      padding: 0.625rem 1rem; /* py-2.5 px-4 */
+      border-radius: 0.5rem; /* rounded-lg */
+      font-weight: 600; /* font-semibold */
+      transition: all 0.2s ease-in-out;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* === Modernized Button Colors (Tech Theme) === */
+    .btn-primary {
+      background-color: var(--text-accent);
+      color: #020617; /* Dark text for high contrast */
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--accent-hover);
+    }
+    .btn-secondary {
+      background-color: transparent;
+      color: var(--text-accent);
+      border: 1px solid var(--text-accent);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--text-accent) 15%, transparent);
+    }
+    .btn-green {
+        background-color: #2dd4bf; /* teal-400 */
+        color: #020617;
+    }
+    .btn-green:hover:not(:disabled) {
+        background-color: #14b8a6; /* teal-500 */
+    }
+    .btn-purple {
+        /* Changed to Yellow from image */
+        background-color: #facc15; /* yellow-400 */
+        color: #020617;
+    }
+    .btn-purple:hover:not(:disabled) {
+        background-color: #eab308; /* yellow-500 */
+    }
+    .btn-orange {
+        /* Changed to Red from image */
+        background-color: #f87171; /* red-400 */
+        color: #020617;
+    }
+    .btn-orange:hover:not(:disabled) {
+        background-color: #ef4444; /* red-500 */
+    }
+    
+    .tab {
+      padding: 0.5rem 1.25rem;
+      background: var(--bg-secondary);
+      border-radius: 0.5rem 0.5rem 0 0;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .tab.active {
+      background: var(--bg-primary);
+      color: var(--text-accent);
+      font-weight: 700;
+      border-color: var(--text-accent);
+    }
+    #tabsContainer {
+      border-bottom: 1px solid var(--border-color);
+    }
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+    }
+    .file-input-wrapper input[type=file] {
+        font-size: 100px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+        font-style: italic;
+    }
+    
+    /* === RENAMED: Generic Tab Button Style === */
+    .tab-button {
+      padding: 0.5rem 1rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .tab-button.active {
+      color: var(--text-accent);
+      font-weight: 700;
+      border-color: var(--text-accent);
+    }
+    /* === RENAMED: Generic Tab Panel Style === */
+    .tab-panel {
+        padding-top: 1rem;
+    }
+    /* === NEW: Helper to hide panels === */
+    .tab-panel.hidden, .config-panel.hidden {
+        display: none;
+    }
+    
+    /* === Modernized Notifications === */
+    #notification-container {
+        position: fixed;
+        top: 1.5rem;
+        right: 1.5rem;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .notification {
+        display: flex;
+        align-items: start;
+        gap: 0.75rem;
+        min-width: 320px;
+        max-width: 400px;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        transform: translateX(120%);
+        animation: slideIn 0.5s forwards, slideOut 0.5s 4.5s forwards;
+        background-color: var(--bg-primary);
+        border-left-width: 4px;
+    }
+    .notification-success { border-color: #22c55e; }
+    .notification-error { border-color: #ef4444; }
+    .notification-icon { flex-shrink: 0; }
+    .notification-content p { margin: 0; }
+    .notification-title { font-weight: 600; color: var(--text-heading); }
+    .notification-success .notification-title { color: #4ade80; }
+    .notification-error .notification-title { color: #f87171; }
+    .notification-message { color: var(--text-primary); font-size: 0.9rem; }
+
+    @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
+    @keyframes slideOut { from { transform: translateX(0); } to { transform: translateX(120%); } }
+
+    /* V1 Stats/Preview Styles (Dark Mode compatible) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    .stat-card {
+      background: var(--bg-secondary);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border-left: 4px solid var(--text-accent);
+    }
+    .stat-card h4 {
+      color: var(--text-heading);
+    }
+    .stat-card p {
+      color: var(--text-secondary);
+    }
+    .stat-card strong {
+      color: var(--text-primary);
+    }
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .preview-table th, .preview-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .preview-table th {
+      background-color: var(--bg-secondary);
+      color: var(--text-heading);
+      font-weight: 600;
+    }
+    .preview-table td {
+      color: var(--text-primary);
+    }
+    .preview-table-wrapper {
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+    }
+
+    /* === NEW CORRELATION MATRIX STYLES === */
+    .corr-matrix-table-wrapper {
+        max-height: 300px;
+        overflow: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+    }
+    .corr-matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+    .corr-matrix-table th, .corr-matrix-table td {
+        padding: 0.4rem 0.5rem;
+        border: 1px solid var(--border-color);
+        min-width: 60px;
+    }
+    .corr-matrix-table th {
+        background-color: var(--bg-secondary);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        color: var(--text-heading);
+    }
+    .corr-matrix-table th:first-child {
+        left: 0;
+        z-index: 2;
+    }
+    .corr-matrix-table td:first-child {
+        font-weight: 600;
+        text-align: left;
+        position: sticky;
+        left: 0;
+        background-color: var(--bg-secondary);
+        color: var(--text-heading);
+    }
+    .corr-matrix-table .diag {
+        background-color: color-mix(in srgb, var(--border-color) 50%, transparent);
+        color: var(--text-secondary);
+    }
+
+    /* Form element light/dark mode */
+    .form-input, .form-select, .form-textarea {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      /* Add light mode select arrows */
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    
+    html.dark .form-select {
+      /* Restore dark mode arrow */
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    }
+    
+    /* Disable arrow for multiple select */
+    .form-select[multiple] {
+        background-image: none;
+        padding-right: 0.75rem; /* browser default */
+    }
+    
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--text-accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-accent) 20%, transparent);
+      outline: none;
+    }
+    
+    input[type='color']::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    input[type='color']::-webkit-color-swatch {
+      border: none;
+      border-radius: 0.375rem;
+    }
+
+    /* Custom prose styles for Gemini output */
+    .prose-invert {
+        --tw-prose-body: var(--text-primary);
+        --tw-prose-headings: var(--text-heading);
+        --tw-prose-bold: var(--text-heading);
+        --tw-prose-links: var(--text-accent);
+    }
+    .prose {
+        color: var(--tw-prose-body);
+        max-width: 65ch;
+    }
+    .prose-sm {
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+    .prose-sm p {
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    /* === LIGHT THEME TEXT FIXES === */
+    h1, h2, h3, h4, h5, h6 {
+        color: var(--text-heading);
+    }
+    
+    label {
+        color: var(--text-primary);
+    }
+    
+    /* Fix specific elements that were hard to see in light theme */
+    .text-slate-100 {
+        color: var(--text-heading) !important;
+    }
+    
+    .text-slate-200 {
+        color: var(--text-heading) !important;
+    }
+    
+    .text-slate-300 {
+        color: var(--text-primary) !important;
+    }
+    
+    .text-slate-400 {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Slope results styling */
+    .slope-result-card {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+    
+    .slope-result-card .font-semibold {
+        color: var(--text-accent);
+    }
+    
+    .slope-result-card .text-xs {
+        color: var(--text-secondary);
+    }
+    
+  </style>
 </head>
-<body class="text-slate-300">
+<body>
 
   <div id="notification-container"></div>
 
@@ -26,13 +404,20 @@
       <div class="text-center flex-grow">
         <h1 class="text-4xl font-bold text-slate-100">Advanced Interactive Data Plotter</h1>
         <p class="text-slate-400 mt-2 max-w-3xl mx-auto">
-          Version 1.2.0: An intuitive tool to load, visualize, and analyze your data.
+          Version 1.2.1: Now with ✨ AI-powered analysis.
         </p>
       </div>
+      <button id="themeToggleBtn" class="btn btn-secondary p-2.5" title="Toggle theme">
+            <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M12 3v1m0 16v1m8.66-12.66-0.7.7M4.04 19.96l-0.7.7M21 12h-1M4 12H3m16.96-7.96-.7.7M4.74 4.74l-.7.7M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0-10 0"/></svg>
+            <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
     </header>
 
-    <div class="flex flex-col gap-6">
-      <div class="card flex flex-col flex-grow">
+    <!-- MODIFIED: Main Layout (now flex-row on large) -->
+    <div class="flex flex-col lg:flex-row gap-6">
+      
+      <!-- MODIFIED: Plot Card (now sized for 2/3 or 3/4 width) -->
+      <div class="card flex flex-col flex-grow lg:w-2/3 xl:w-3/4">
           <div id="tabsContainer" class="tabs"></div>
           <div id="plot" class="flex-grow min-h-[600px] w-full mt-4"></div>
           <div id="slopeSection" class="mt-6 hidden">
@@ -44,196 +429,1661 @@
                 <div class="empty-state">No range selected yet.</div>
             </div>
           </div>
-        </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1 flex flex-col gap-6">
-            <div class="card">
-              <h2 class="text-xl font-bold text-slate-200 mb-4">1. Load Data</h2>
-              <div class="flex-grow">
-                  <label for="dataInput" class="block font-medium mb-1 text-sm">Paste Tab-Delimited Data:</label>
-                  <textarea id="dataInput" spellcheck="false" aria-label="Raw tab delimited data input" class="form-textarea w-full h-48 p-2 border rounded-lg font-mono text-sm resize-y"></textarea>
-              </div>
-              <div class="mt-4 flex flex-col gap-3">
-                  <div class="file-input-wrapper btn btn-secondary w-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                      <span>Upload File (.tsv, .csv, .xlsx)</span>
-                      <input type="file" accept=".txt,.tsv,.csv,.xlsx,.xls" id="fileInput" />
-                  </div>
-                  <button id="loadDataBtn" class="btn btn-primary w-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
-                      <span>Load Pasted Data</span>
-                  </button>
-              </div>
-            </div>
+          <!-- === NEW: Config Tab Navigation === -->
+          <div class="flex border-b border-slate-700 mt-6" id="configTabsContainer">
+            <button class="tab-button active" data-tab-panel="dataLoadingPanel">Data Loading</button>
+            <button class="tab-button" data-tab-panel="filtersPanel">Filters</button>
+            <button class="tab-button" data-tab-panel="customizationsPanel">Plot Customizations</button>
+            <button class="tab-button" data-tab-panel="actionsPanel">Actions</button>
+          </div>
 
-            <div class="card" id="dataPreviewCard">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">Data Preview</h2>
-                <div id="dataPreviewContainer">
-                    <div class="empty-state">Load data to see a preview.</div>
-                </div>
-            </div>
+          <!-- === NEW: Config Tab Panels === -->
+          <div id="configPanelsContainer" class="mt-4">
             
-            <div class="card" id="dataStatsCard">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">Data Statistics</h2>
-                <div id="dataStatsContainer">
-                    <div class="empty-state">Load data to see statistics.</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">Actions</h2>
-                <div class="flex flex-col gap-3">
-                    <button id="exportPlotBtn" class="btn btn-green w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        <span>Export Plot as PNG</span>
-                    </button>
-                    <button id="exportPlotSVGBtn" class="btn btn-green w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        <span>Export Plot as SVG</span>
-                    </button>
-                    <button id="exportPlotHTMLBtn" class="btn btn-green w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        <span>Export as Standalone HTML</span>
-                    </button>
-                    <button id="exportDataBtn" class="btn btn-orange w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16"x2="8" y1="17" y2="17"/></svg>
-                        <span>Export Filtered Data (CSV)</span>
-                    </button>
-                    <button id="saveToReportBtn" class="btn btn-purple w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        <span>Save to Report</span>
-                    </button>
-                    <button id="generateReportBtn" class="btn btn-primary w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                        <span>Generate PDF Report</span>
-                    </button>
-                    <hr class="border-slate-700 my-2">
-                    <button id="saveSessionBtn" class="btn btn-secondary w-full" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        <span>Save Session</span>
-                    </button>
+            <!-- 1. Data Loading Panel -->
+            <div id="dataLoadingPanel" class="config-panel tab-panel grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- MOVED: Content from "1. Load Data" card -->
+              <div class="flex flex-col gap-3">
+                <label for="dataInput" class="block font-medium mb-1 text-sm">Paste Tab-Delimited Data:</label>
+                <textarea id="dataInput" spellcheck="false" aria-label="Raw tab delimited data input" class="form-textarea w-full h-48 p-2 border rounded-lg font-mono text-sm resize-y"></textarea>
+                <div class="mt-4 flex flex-col gap-3">
                     <div class="file-input-wrapper btn btn-secondary w-full">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                        <span>Load Session</span>
-                        <input type="file" accept=".json" id="loadSessionInput" />
+                        <span>Upload a File (.tsv, .csv, .txt)</span>
+                        <input type="file" accept=".txt,.tsv,.csv" id="fileInput" />
                     </div>
-
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">Saved Report Views</h2>
-                <div id="savedViewsList" class="filter-group" style="max-height: 200px; overflow-y:auto;">
-                <div class="empty-state">No saved views yet.</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="lg:col-span-2 flex flex-col gap-6">
-            <div class="card">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-slate-200">2. Configure Plot</h2>
-                    <button id="addPlotTabBtn" class="btn btn-secondary" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Add Plot Tab</span>
+                    <button id="loadDataBtn" class="btn btn-primary w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                        <span>Load Pasted Data</span>
                     </button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                    <label for="xAxisSelect" class="block font-medium mb-1 text-sm">X-Axis:</label>
-                    <select id="xAxisSelect" disabled placeholder="Select X-Axis..."></select>
-                    </div>
-                    <div>
-                    <label for="leftYAxisSelect" class="block font-medium mb-1 text-sm">Left Y-Axis(s):</label>
-                    <select id="leftYAxisSelect" disabled multiple placeholder="Select Left Y-Axis(s)..."></select>
-                    </div>
-                    <div>
-                    <label for="rightYAxisSelect" class="block font-medium mb-1 text-sm">Right Y-Axis(s):</label>
-                    <select id="rightYAxisSelect" disabled multiple placeholder="Select Right Y-Axis(s)..."></select>
-                    </div>
-                    <div>
-                    <label for="groupingSelect" class="block font-medium mb-1 text-sm">Group By:</label>
-                    <select id="groupingSelect" multiple disabled placeholder="Select Group By..."></select>
-                    </div>
-                    <div class="lg:col-span-2">
-                    <label for="chartTypeSelect" class="block font-medium mb-1 text-sm">Plot Type:</label>
-                    <select id="chartTypeSelect" disabled class="form-select">
-                        <option value="box" selected>Box Plot</option>
-                        <option value="violin">Violin Plot</option>
-                        <option value="bar">Bar Plot</option>
-                        <option value="scatter">Scatter Plot</option>
-                        <option value="line">Line Plot</option>
-                        <option value="histogram">Histogram</option>
-                    </select>
-                    <div class="flex items-center mt-4" id="outlierToggleContainer">
-                        <input type="checkbox" id="outlierToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" checked />
-                        <label for="outlierToggle" class="ml-2 block text-sm font-medium">Show Outliers</label>
-                    </div>
-                     <div class="flex items-center mt-2" id="dataPointsToggleContainer">
-                        <input type="checkbox" id="showDataPointsToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" />
-                        <label for="showDataPointsToggle" class="ml-2 block text-sm font-medium">Show Data Point Count (n)</label>
-                    </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">3. Filters</h2>
-                <div id="filtersContainer" class="filter-group">
-                    <div class="empty-state">Load data to see available filters.</div>
-                </div>
-            </div>
-            <div class="card" id="customizationCard">
-                <h2 class="text-xl font-bold text-slate-200 mb-4">4. Plot Customization</h2>
-                <div class="flex border-b border-slate-700 mb-4" id="customizationTabsContainer">
-                    <button class="custom-tab active" data-tab="titles">Titles & Labels</button>
-                    <button class="custom-tab" data-tab="legends">Legends</button>
-                    <button class="custom-tab" data-tab="annotations">Annotations</button>
-                </div>
-
-                <div id="titlesPanel" class="custom-panel grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-full">
-                        <label for="customTitle" class="block font-medium mb-1 text-sm">Plot Title:</label>
-                        <input type="text" id="customTitle" class="form-input" placeholder="Enter custom plot title">
-                    </div>
-                    <div id="axisTitlesContainer" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+              </div>
+              <!-- MOVED: Content from "Preview" and "Stats" cards -->
+              <div class="flex flex-col gap-6">
+                  <div>
+                      <h2 class="text-lg font-bold text-slate-200 mb-2">Data Preview</h2>
+                      <div id="dataPreviewContainer">
+                          <div class="empty-state">Load data to see a preview.</div>
                       </div>
-                </div>
+                  </div>
+                  <div class="mt-4">
+                      <h2 class="text-lg font-bold text-slate-200 mb-2">Data Statistics (Full Set)</h2>
+                      <div id="dataStatsContainer">
+                          <div class="empty-state">Load data to see statistics.</div>
+                      </div>
+                  </div>
+                  <div class="mt-4">
+                      <h2 class="text-lg font-bold text-slate-200 mb-2">Correlation Matrix (Numeric)</h2>
+                      <div id="correlationMatrixContainer">
+                          <div class="empty-state">Load data to see correlation matrix.</div>
+                      </div>
+                  </div>
+              </div>
+            </div>
 
-                <div id="legendsPanel" class="custom-panel hidden">
-                    <div id="legendEditorContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 max-h-60 overflow-y-auto">
-                        <div class="empty-state col-span-full">Plot must be generated to see legends.</div>
+            <!-- 2. Filters Panel -->
+            <div id="filtersPanel" class="config-panel tab-panel hidden">
+              <!-- MOVED: Content from "3. Filters" card -->
+              <div id="filtersContainer" class="filter-group">
+                  <div class="empty-state">Load data to see available filters.</div>
+              </div>
+            </div>
+
+            <!-- 3. Plot Customizations Panel -->
+            <div id="customizationsPanel" class="config-panel tab-panel hidden">
+              <!-- MOVED: Content from "4. Plot Customization" card -->
+              <!-- The h2 is removed, it's redundant with the tab -->
+              <div class="flex border-b border-slate-700 mb-4" id="customizationTabsContainer">
+                  <button class="tab-button active" data-tab="titles">Titles & Labels</button>
+                  <button class="tab-button" data-tab="legends">Legends</button>
+                  <button class="tab-button" data-tab="annotations">Annotations</button>
+              </div>
+
+              <!-- Note: The 'hidden' class on panels below is controlled by its *own* tab logic -->
+              <div id="titlesPanel" class="tab-panel grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="col-span-full">
+                      <label for="customTitle" class="block font-medium mb-1 text-sm">Plot Title:</label>
+                      <input type="text" id="customTitle" class="form-input" placeholder="Enter custom plot title">
+                  </div>
+                  <div id="axisTitlesContainer" class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Axis title inputs will be injected here -->
+                  </div>
+              </div>
+
+              <div id="legendsPanel" class="tab-panel hidden">
+                  <div id="legendEditorContainer" class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 max-h-60 overflow-y-auto">
+                      <div class="empty-state col-span-full">Plot must be generated to see legends.</div>
+                  </div>
+              </div>
+
+              <div id="annotationsPanel" class="tab-panel hidden">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="border-r border-slate-700 pr-4">
+                          <h3 class="font-semibold text-slate-200 mb-2">Add New Annotation</h3>
+                          <div class="flex flex-col gap-2">
+                              <select id="annotationAxis" class="form-select text-sm"><option value="y">Horizontal (Y-Axis)</option><option value="x">Vertical (X-Axis)</option></select>
+                              <input type="number" id="annotationValue" placeholder="Value (e.g., 50)" class="form-input text-sm">
+                              <input type="text" id="annotationText" placeholder="Optional Label" class="form-input text-sm">
+                              <div class="flex items-center gap-2">
+                                  <select id="annotationStyle" class="form-select text-sm"><option value="solid">Solid</option><option value="dash">Dash</option><option value="dot">Dot</option><option value="dashdot">Dash-Dot</option></select>
+                                  <input type="color" id="annotationColor" value="#38bdf8" class="p-1 h-10 w-16 block bg-slate-800 border border-slate-600 cursor-pointer rounded-lg">
+                              </div>
+                              <button id="addAnnotationBtn" class="btn btn-secondary w-full mt-1 text-sm">Add Line</button>
+                          </div>
+                      </div>
+                      <div>
+                          <h3 class="font-semibold text-slate-200 mb-2">Current Annotations</h3>
+                          <div id="annotationsListContainer" class="max-h-48 overflow-y-auto">
+                          <div class="empty-state">No annotations yet.</div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+
+            <!-- 4. Actions Panel -->
+            <!-- MODIFIED: Removed grid classes from panel, added internal grid -->
+            <div id="actionsPanel" class="config-panel tab-panel hidden">
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- MOVED: Content from "Actions" card -->
+                <div>
+                    <h2 class="text-lg font-bold text-slate-200 mb-2">Export & Report</h2>
+                    <div class="flex flex-col gap-3">
+                        <button id="exportPlotBtn" class="btn btn-green w-full" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            <span>Export Plot as PNG</span>
+                        </button>
+                        <button id="exportDataBtn" class="btn btn-orange w-full" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16"x2="8" y1="17" y2="17"/></svg>
+                            <span>Export Filtered Data (CSV)</span>
+                        </button>
+                        <button id="saveToReportBtn" class="btn btn-purple w-full" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            <span>Save to Report</span>
+                        </button>
+                        <button id="generateReportBtn" class="btn btn-primary w-full" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <span>Generate PDF Report</span>
+                        </button>
+
+                        <!-- === NEW GEMINI BUTTON === -->
+                        <button id="analyzePlotBtn" class="btn btn-primary w-full mt-2" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 4.8-4.8 1.9 4.8 1.9L12 15.4l1.9-4.8 4.8-1.9-4.8-1.9L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="m3 5 2.8 2.8"/><path d="m18.2 18.2 2.8 2.8"/><path d="M3 19v-4"/><path d="M17 19h4"/><path d="m3 17 2.8-2.8"/><path d="m18.2 5.8-2.8 2.8"/></svg>
+                            <span>✨ Analyze Plot</span>
+                        </button>
                     </div>
                 </div>
-
-                <div id="annotationsPanel" class="custom-panel hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="border-r border-slate-700 pr-4">
-                            <h3 class="font-semibold text-slate-200 mb-2">Add New Annotation</h3>
-                            <div class="flex flex-col gap-2">
-                                <select id="annotationAxis" class="form-select text-sm"><option value="y">Horizontal (Y-Axis)</option><option value="x">Vertical (X-Axis)</option></select>
-                                <input type="number" id="annotationValue" placeholder="Value (e.g., 50)" class="form-input text-sm">
-                                <input type="text" id="annotationText" placeholder="Optional Label" class="form-input text-sm">
-                                <div class="flex items-center gap-2">
-                                    <select id="annotationStyle" class="form-select text-sm"><option value="solid">Solid</option><option value="dash">Dash</option><option value="dot">Dot</option><option value="dashdot">Dash-Dot</option></select>
-                                    <input type="color" id="annotationColor" value="#38bdf8" class="p-1 h-10 w-16 block bg-slate-800 border border-slate-600 cursor-pointer rounded-lg">
-                                </div>
-                                <button id="addAnnotationBtn" class="btn btn-secondary w-full mt-1 text-sm">Add Line</button>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-slate-200 mb-2">Current Annotations</h3>
-                            <div id="annotationsListContainer" class="max-h-48 overflow-y-auto">
-                            <div class="empty-state">No annotations yet.</div>
-                            </div>
-                        </div>
+                <!-- MOVED: Content from "Saved Report Views" card -->
+                <div>
+                    <h2 class="text-lg font-bold text-slate-200 mb-2">Saved Report Views</h2>
+                    <div id="savedViewsList" class="filter-group" style="max-height: 200px; overflow-y:auto;">
+                      <div class="empty-state">No saved views yet.</div>
                     </div>
+                </div>
+              </div>
+
+              <!-- === NEW GEMINI ANALYSIS SECTION === -->
+              <div id="geminiAnalysisContainer" class="mt-6 pt-6 border-t border-slate-700">
+                  <h2 class="text-lg font-bold text-slate-200 mb-2">✨ AI Analysis</h2>
+                  <div id="geminiLoadingIndicator" class="hidden flex items-center justify-center gap-2 text-slate-400">
+                      <svg class="animate-spin h-5 w-5 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Generating insights...</span>
+                  </div>
+                  <div id="geminiAnalysisResult" class="text-slate-300 text-sm prose prose-sm prose-invert max-w-none">
+                      <p class="empty-state !p-0 !text-left">Click 'Analyze Plot' to get AI-powered insights on your current visualization.</p>
+                  </div>
+              </div>
+            </div>
+
+          </div>
+          <!-- === END NEW Config Tabs === -->
+
+      </div> <!-- End Plot Card -->
+      
+      <!-- MODIFIED: This was the grid, now it's the side column -->
+      <div class="flex flex-col gap-6 lg:w-1/3 xl:w-1/4">
+        
+        <!-- MOVED: This was in the lg:col-span-2 div -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-200">2. Configure Plot</h2>
+                <button id="addPlotTabBtn" class="btn btn-secondary" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Add Plot Tab</span>
+                </button>
+            </div>
+            <!-- MODIFIED: lg:grid-cols-1 to stack better in side col -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+                <div>
+                  <label for="xAxisSelect" class="block font-medium mb-1 text-sm">X-Axis:</label>
+                  <select id="xAxisSelect" disabled class="form-select"></select>
+                </div>
+                <div>
+                  <label for="leftYAxisSelect" class="block font-medium mb-1 text-sm">Left Y-Axis(s):</label>
+                  <select id="leftYAxisSelect" disabled multiple class="form-select h-28"></select>
+                </div>
+                <div>
+                  <label for="rightYAxisSelect" class="block font-medium mb-1 text-sm">Right Y-Axis(s):</label>
+                  <select id="rightYAxisSelect" disabled multiple class="form-select h-28"></select>
+                </div>
+                <div>
+                  <label for="groupingSelect" class="block font-medium mb-1 text-sm">Group By:</label>
+                  <select id="groupingSelect" multiple disabled class="form-select h-20"></select>
+                </div>
+                <!-- MODIFIED: lg:col-span-1 -->
+                <div class="lg:col-span-1">
+                  <label for="chartTypeSelect" class="block font-medium mb-1 text-sm">Plot Type:</label>
+                  <select id="chartTypeSelect" disabled class="form-select">
+                      <option value="box" selected>Box Plot</option>
+                      <option value="violin">Violin Plot</option>
+                      <option value="bar">Bar Plot</option>
+                      <option value="scatter">Scatter Plot</option>
+                      <option value="line">Line Plot</option>
+                  </select>
+                  <div class="flex items-center mt-4" id="outlierToggleContainer">
+                      <input type="checkbox" id="outlierToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" checked />
+                      <label for="outlierToggle" class="ml-2 block text-sm font-medium">Show Outliers</label>
+                  </div>
+                   <div class="flex items-center mt-2" id="dataPointsToggleContainer">
+                      <input type="checkbox" id="showDataPointsToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" />
+                      <label for="showDataPointsToggle" class="ml-2 block text-sm font-medium">Show Data Point Count (n)</label>
+                  </div>
+                  <div class="flex items-center mt-2" id="slopeModeToggleContainer">
+                      <input type="checkbox" id="slopeModeToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" />
+                      <label for="slopeModeToggle" class="ml-2 block text-sm font-medium">Enable Slope Calculation</label>
+                  </div>
+                  <div class="flex items-center mt-2" id="showBarValuesToggleContainer">
+                      <input type="checkbox" id="showBarValuesToggle" disabled class="h-4 w-4 rounded border-slate-600 text-[var(--text-accent)] focus:ring-[var(--text-accent)]" />
+                      <label for="showBarValuesToggle" class="ml-2 block text-sm font-medium">Show Bar Values</label>
+                  </div>
                 </div>
             </div>
         </div>
-      </div>
-    </div>
+        
+      </div> <!-- End Side Column -->
+
+    </div> <!-- End Main Layout -->
+
   </div>
 
-  <script src="assets/app.js"></script>
+  <script>
+    const { jsPDF } = window.jspdf;
+
+    // --- State Management ---
+    let parsedData = [];
+    let headers = [];
+    let plotTabs = [];
+    let activeTabId = null;
+    let savedReportViews = [];
+    let currentTheme = 'dark';
+
+    // --- DOM Element Cache ---
+    const dom = {
+        notificationContainer: document.getElementById('notification-container'),
+        dataInput: document.getElementById('dataInput'),
+        fileInput: document.getElementById('fileInput'),
+        loadDataBtn: document.getElementById('loadDataBtn'),
+        exportPlotBtn: document.getElementById('exportPlotBtn'),
+        exportDataBtn: document.getElementById('exportDataBtn'),
+        saveToReportBtn: document.getElementById('saveToReportBtn'),
+        generateReportBtn: document.getElementById('generateReportBtn'),
+        addPlotTabBtn: document.getElementById('addPlotTabBtn'),
+        xAxisSelect: document.getElementById('xAxisSelect'),
+        leftYAxisSelect: document.getElementById('leftYAxisSelect'),
+        rightYAxisSelect: document.getElementById('rightYAxisSelect'),
+        groupingSelect: document.getElementById('groupingSelect'),
+        chartTypeSelect: document.getElementById('chartTypeSelect'),
+        outlierToggle: document.getElementById('outlierToggle'),
+        showDataPointsToggle: document.getElementById('showDataPointsToggle'),
+        slopeModeToggle: document.getElementById('slopeModeToggle'),
+        showBarValuesToggle: document.getElementById('showBarValuesToggle'),
+        filtersContainer: document.getElementById('filtersContainer'),
+        plotDiv: document.getElementById('plot'),
+        savedViewsList: document.getElementById('savedViewsList'),
+        tabsContainer: document.getElementById('tabsContainer'),
+        slopeSection: document.getElementById('slopeSection'),
+        slopeResults: document.getElementById('slopeResults'),
+        dataPreviewContainer: document.getElementById('dataPreviewContainer'),
+        dataStatsContainer: document.getElementById('dataStatsContainer'),
+        correlationMatrixContainer: document.getElementById('correlationMatrixContainer'),
+        customizationTabsContainer: document.getElementById('customizationTabsContainer'),
+        titlesPanel: document.getElementById('titlesPanel'),
+        legendsPanel: document.getElementById('legendsPanel'),
+        annotationsPanel: document.getElementById('annotationsPanel'),
+        customTitle: document.getElementById('customTitle'),
+        axisTitlesContainer: document.getElementById('axisTitlesContainer'),
+        legendEditorContainer: document.getElementById('legendEditorContainer'),
+        annotationsListContainer: document.getElementById('annotationsListContainer'),
+        addAnnotationBtn: document.getElementById('addAnnotationBtn'),
+        annotationAxis: document.getElementById('annotationAxis'),
+        annotationValue: document.getElementById('annotationValue'),
+        annotationText: document.getElementById('annotationText'),
+        annotationStyle: document.getElementById('annotationStyle'),
+        annotationColor: document.getElementById('annotationColor'),
+        // === NEW GEMINI DOM ELEMENTS ===
+        analyzePlotBtn: document.getElementById('analyzePlotBtn'),
+        geminiAnalysisContainer: document.getElementById('geminiAnalysisContainer'),
+        geminiLoadingIndicator: document.getElementById('geminiLoadingIndicator'),
+        geminiAnalysisResult: document.getElementById('geminiAnalysisResult'),
+        // === NEW THEME ELEMENTS ===
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
+        themeIconSun: document.getElementById('themeIconSun'),
+        themeIconMoon: document.getElementById('themeIconMoon'),
+    };
+
+    // --- Utility Functions ---
+    const isNumericArray = (arr) => arr.every(val => val === null || val === undefined || val === '' || !isNaN(val));
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+    
+    function pearsonCorrelation(x, y) {
+        let xyPairs = [];
+        for(let i = 0; i < x.length; i++) {
+            const xVal = Number(x[i]);
+            const yVal = Number(y[i]);
+            if (!isNaN(xVal) && !isNaN(yVal)) {
+                xyPairs.push({x: xVal, y: yVal});
+            }
+        }
+        
+        const n = xyPairs.length;
+        if (n < 2) return NaN;
+
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+        xyPairs.forEach(p => {
+            sumX += p.x;
+            sumY += p.y;
+            sumXY += p.x * p.y;
+            sumX2 += p.x * p.x;
+            sumY2 += p.y * p.y;
+        });
+
+        const num = (n * sumXY) - (sumX * sumY);
+        const den = Math.sqrt(((n * sumX2) - (sumX * sumX)) * ((n * sumY2) - (sumY * sumY)));
+        
+        return (den === 0) ? NaN : (num / den);
+    }
+
+    function calculateCorrelationMatrix(data, numericHeaders) {
+        const matrix = {};
+        const columns = {};
+        numericHeaders.forEach(h => {
+            columns[h] = data.map(d => d[h]);
+        });
+        
+        for (let i = 0; i < numericHeaders.length; i++) {
+            const h1 = numericHeaders[i];
+            matrix[h1] = {};
+            for (let j = 0; j < numericHeaders.length; j++) {
+                if (i === j) {
+                    matrix[h1][h1] = 1.0;
+                } else {
+                    const h2 = numericHeaders[j];
+                    // Only compute once
+                    if (matrix[h2] && matrix[h2][h1] !== undefined) {
+                         matrix[h1][h2] = matrix[h2][h1];
+                    } else {
+                        matrix[h1][h2] = pearsonCorrelation(columns[h1], columns[h2]);
+                    }
+                }
+            }
+        }
+        return matrix;
+    }
+
+    function renderCorrelationMatrix(matrix, headers) {
+        const container = dom.correlationMatrixContainer; // Use cached DOM element
+        if (headers.length === 0) {
+            container.innerHTML = '<div class="empty-state">No numeric columns found to correlate.</div>';
+            return;
+        }
+        
+        let table = `<div class="corr-matrix-table-wrapper"><table class="corr-matrix-table">`;
+        // Header Row
+        table += `<thead><tr><th>&nbsp;</th>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`;
+        // Data Rows
+        table += '<tbody>';
+        headers.forEach((h1, i) => {
+            table += `<tr><td>${h1}</td>`; // Row Header
+            headers.forEach((h2, j) => {
+                const val = matrix[h1][h2];
+                if (isNaN(val)) {
+                    table += `<td class="diag">N/A</td>`;
+                } else {
+                    const r = val;
+                    // Updated color logic for better theme compatibility
+                    const rAbs = Math.abs(r);
+                    let mixColor = 'var(--text-accent)'; // Blue for positive
+                    if (r < 0) mixColor = '#f87171'; // Red for negative
+                    
+                    const bgColor = `color-mix(in srgb, ${mixColor} ${rAbs * 70}%, transparent)`;
+                    const textColor = rAbs > 0.5 ? '#ffffff' : 'var(--text-primary)';
+                    
+                    const className = (i === j) ? 'diag' : '';
+                    const style = (i === j) ? '' : `style="background-color: ${bgColor}; color: ${textColor}"`;
+                    
+                    table += `<td class="${className}" ${style}>${r.toFixed(3)}</td>`;
+                }
+            });
+            table += '</tr>';
+        });
+        table += '</tbody></table></div>';
+        container.innerHTML = table;
+    }
+    
+    function showNotification(title, message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-icon">
+              ${type === 'success' ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`}
+            </div>
+            <div class="notification-content">
+                <p class="notification-title">${title}</p>
+                <p class="notification-message">${message}</p>
+            </div>
+        `;
+        dom.notificationContainer.appendChild(notification);
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    // --- Core Application Logic ---
+
+    function parseTabDelimited(text) {
+        const lines = text.trim().split('\n').filter(line => line.trim());
+        if (lines.length < 2) throw new Error('At least one header row and one data row are required.');
+        
+        const firstLine = lines[0];
+        const delimiter = firstLine.includes('\t') ? '\t' : (firstLine.includes(',') ? ',' : ' ');
+        
+        headers = lines[0].split(delimiter).map(h => h.trim());
+        const dataRows = lines.slice(1);
+        
+        return dataRows.map(line => {
+            const parts = line.split(delimiter);
+            const obj = {};
+            headers.forEach((h, i) => {
+                let val = parts[i] ? parts[i].trim() : '';
+                const numVal = Number(val);
+                obj[h] = (val === '' || isNaN(numVal)) ? val : numVal;
+            });
+            return obj;
+        });
+    }
+
+    function populateSelect(sel, options, multiple = false) {
+        sel.innerHTML = '';
+        sel.multiple = multiple;
+        options.forEach(opt => {
+            const el = document.createElement('option');
+            el.value = opt;
+            el.textContent = opt;
+            sel.appendChild(el);
+        });
+    }
+
+    function updateDataPreview() {
+      if (!parsedData.length) {
+        dom.dataPreviewContainer.innerHTML = '<div class="empty-state">Load data to see a preview.</div>';
+        return;
+      }
+
+      const previewData = parsedData.slice(0, 10);
+      let html = `
+        <div class="preview-table-wrapper">
+          <table class="preview-table">
+            <thead>
+              <tr>
+                ${headers.map(h => `<th>${h}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${previewData.map(row => `
+                <tr>
+                  ${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-400 text-center mt-2">
+          Showing first ${previewData.length} of ${parsedData.length} total rows
+        </p>
+      `;
+      dom.dataPreviewContainer.innerHTML = html;
+    }
+
+    // === NEW: Refactored Stats Generation ===
+    function generateDataStats(dataToStat) {
+      if (!dataToStat.length) {
+        return {};
+      }
+      
+      const stats = {};
+      headers.forEach(header => {
+        const colData = dataToStat.map(d => d[header]).filter(v => v !== '' && v !== null && v !== undefined);
+        if (!colData.length) return;
+        
+        const isNumeric = isNumericArray(colData);
+        
+        if (isNumeric) {
+          const numbers = colData.map(v => Number(v));
+          const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+          const min = Math.min(...numbers);
+          const max = Math.max(...numbers);
+          stats[header] = {
+            type: 'numeric',
+            count: numbers.length,
+            mean: mean.toFixed(2),
+            min: min,
+            max: max
+          };
+        } else {
+          const unique = [...new Set(colData)];
+          stats[header] = {
+            type: 'categorical',
+            count: colData.length,
+            unique: unique.length,
+            example: unique[0]
+          };
+        }
+      });
+      return stats;
+    }
+
+    // === MODIFIED: updateDataStats now uses the refactored function ===
+    function updateDataStats() {
+      if (!parsedData.length) {
+        dom.dataStatsContainer.innerHTML = '<div class="empty-state">Load data to see statistics.</div>';
+        dom.correlationMatrixContainer.innerHTML = '<div class="empty-state">Load data to see correlation matrix.</div>';
+        return;
+      }
+      
+      const stats = generateDataStats(parsedData);
+      let statsHtml = '';
+
+      for (const header in stats) {
+        const s = stats[header];
+        if (s.type === 'numeric') {
+          statsHtml += `
+            <div class="stat-card">
+              <h4 class="font-semibold text-sm text-slate-200">${header}</h4>
+              <p class="text-xs text-slate-400 mb-1">Numeric</p>
+              <div class="text-sm">
+                <div>Mean: <strong>${s.mean}</strong></div>
+                <div>Min: <strong>${s.min}</strong></div>
+                <div>Max: <strong>${s.max}</strong></div>
+              </div>
+            </div>
+          `;
+        } else {
+          statsHtml += `
+            <div class="stat-card">
+              <h4 class="font-semibold text-sm text-slate-200">${header}</h4>
+              <p class="text-xs text-slate-400 mb-1">Categorical</p>
+              <div class="text-sm">
+                <div>Unique: <strong>${s.unique}</strong></div>
+                <div class="truncate">e.g.: <strong>${s.example}</strong></div>
+              </div>
+            </div>
+          `;
+        }
+      }
+      dom.dataStatsContainer.innerHTML = `<div class="stats-grid">${statsHtml}</div>`;
+    }
+
+    function buildFilters() {
+        dom.filtersContainer.innerHTML = '';
+        if (!parsedData.length) {
+            dom.filtersContainer.innerHTML = '<div class="empty-state">Load data to see available filters.</div>';
+            return;
+        }
+
+        headers.forEach(h => {
+            const colData = parsedData.map(d => d[h]).filter(v => v !== '' && v !== null && v !== undefined);
+            if (colData.length === 0) return;
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'mb-3';
+
+            if (isNumericArray(colData)) {
+                const min = Math.min(...colData);
+                const max = Math.max(...colData);
+                groupDiv.innerHTML = `
+                    <label class="font-semibold text-sm">${h} (min/max):</label>
+                    <div class="flex gap-2 mt-1">
+                        <input type="number" step="any" id="filter_min_${h}" placeholder="Min" class="form-input w-full p-1 border rounded-md" value="${min}" />
+                        <input type="number" step="any" id="filter_max_${h}" placeholder="Max" class="form-input w-full p-1 border rounded-md" value="${max}" />
+                    </div>`;
+            } else {
+                const uniqueValues = [...new Set(colData)].sort();
+                groupDiv.innerHTML = `
+                    <label class="font-semibold text-sm">${h} (select categories):</label>
+                    <select multiple id="filter_cat_${h}" class="form-select w-full p-1 mt-1 border rounded-md" size="3">
+                        ${uniqueValues.map(val => `<option value="${val}" selected>${val}</option>`).join('')}
+                    </select>`;
+            }
+            dom.filtersContainer.appendChild(groupDiv);
+        });
+
+        dom.filtersContainer.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', () => saveTabStateAndDraw(activeTabId));
+        });
+    }
+
+    function filterData(data) {
+        let filtered = [...data];
+        headers.forEach(h => {
+            const colData = data.map(d => d[h]).filter(v => v !== '' && v !== null && v !== undefined);
+            if (!colData.length) return;
+
+            if (isNumericArray(colData)) {
+                const minInput = document.getElementById(`filter_min_${h}`);
+                const maxInput = document.getElementById(`filter_max_${h}`);
+                if (!minInput || !maxInput || minInput.value === '' || maxInput.value === '') return;
+                const minVal = parseFloat(minInput.value);
+                const maxVal = parseFloat(maxInput.value);
+                filtered = filtered.filter(d => {
+                    const val = d[h];
+                    return val >= minVal && val <= maxVal;
+                });
+            } else {
+                const sel = document.getElementById(`filter_cat_${h}`);
+                if (!sel) return;
+                const selectedOptions = Array.from(sel.selectedOptions).map(o => o.value);
+                if (selectedOptions.length > 0 && selectedOptions.length < sel.options.length) {
+                    filtered = filtered.filter(d => selectedOptions.includes(d[h]));
+                }
+            }
+        });
+        return filtered;
+    }
+
+    function getRandomColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        return `#${"00000".substring(0, 6 - c.length)}${c}`;
+    }
+
+    // --- Tab Management ---
+
+    function createNewTab(name) {
+        return {
+            id: Date.now() + Math.random(),
+            name: name || `Plot ${plotTabs.length + 1}`,
+            xAxis: null, leftYAxes: [], rightYAxes: [], grouping: [],
+            chartType: 'box', showOutliers: true, showDataPoints: false,
+            slopeModeEnabled: false, showBarValues: false,
+            filters: {}, plotTraces: [], plotLayout: {},
+            legendStyles: {},
+            annotations: [],
+            customTitles: { title: '', xaxis: '' }
+        };
+    }
+
+    function renderTabs() {
+        dom.tabsContainer.innerHTML = '';
+        plotTabs.forEach(tab => {
+            const tabEl = document.createElement('div');
+            tabEl.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+            tabEl.textContent = tab.name;
+            tabEl.title = 'Click to activate. Right-click to rename. Double-click to delete.';
+            
+            tabEl.onclick = () => activateTab(tab.id);
+            tabEl.oncontextmenu = e => {
+                e.preventDefault();
+                const newName = prompt('Rename tab:', tab.name);
+                if (newName && newName.trim()) {
+                    tab.name = newName.trim();
+                    renderTabs();
+                }
+            };
+            tabEl.ondblclick = e => {
+                e.preventDefault();
+                if (plotTabs.length <= 1) {
+                    showNotification('Action Denied', 'At least one plot tab is required.', 'error');
+                    return;
+                }
+                if (confirm(`Are you sure you want to delete the tab "${tab.name}"?`)) {
+                    const idxToRemove = plotTabs.findIndex(t => t.id === tab.id);
+                    if (idxToRemove !== -1) {
+                        plotTabs.splice(idxToRemove, 1);
+                        if (activeTabId === tab.id) {
+                            activateTab(plotTabs[0].id);
+                        } else {
+                            renderTabs();
+                        }
+                    }
+                }
+            };
+            dom.tabsContainer.appendChild(tabEl);
+        });
+    }
+
+    function activateTab(tabId) {
+        const tab = plotTabs.find(t => t.id === tabId);
+        if (!tab) return;
+        activeTabId = tabId;
+
+        // Smartly set X-axis if it's null
+        if (!tab.xAxis && headers.length > 0) {
+            const categoricalHeaders = headers.filter(h => !isNumericArray(parsedData.map(d => d[h])));
+            tab.xAxis = categoricalHeaders[0] || headers[0];
+        }
+        
+        // Smartly set Y-axis if it's null
+        if (tab.leftYAxes.length === 0 && headers.length > 0) {
+            const numericHeaders = headers.filter(h => isNumericArray(parsedData.map(d => d[h])));
+            if (numericHeaders.length > 0) {
+                tab.leftYAxes = [numericHeaders[0]];
+            }
+        }
+
+        dom.xAxisSelect.value = tab.xAxis;
+        Array.from(dom.leftYAxisSelect.options).forEach(opt => { opt.selected = tab.leftYAxes.includes(opt.value); });
+        Array.from(dom.rightYAxisSelect.options).forEach(opt => { opt.selected = tab.rightYAxes.includes(opt.value); });
+        Array.from(dom.groupingSelect.options).forEach(opt => { opt.selected = tab.grouping.includes(opt.value); });
+        dom.chartTypeSelect.value = tab.chartType;
+        dom.outlierToggle.checked = tab.showOutliers;
+        dom.showDataPointsToggle.checked = tab.showDataPoints;
+        dom.slopeModeToggle.checked = tab.slopeModeEnabled;
+        dom.showBarValuesToggle.checked = tab.showBarValues;
+
+        buildFilters(); 
+        for (const h in tab.filters) {
+            const val = tab.filters[h];
+            if (val === null || val === undefined) continue;
+            if (typeof val === 'object' && 'min' in val) {
+                const minInput = document.getElementById(`filter_min_${h}`);
+                const maxInput = document.getElementById(`filter_max_${h}`);
+                if (minInput && maxInput) {
+                    minInput.value = val.min;
+                    maxInput.value = val.max;
+                }
+            } else if (Array.isArray(val)) {
+                const sel = document.getElementById(`filter_cat_${h}`);
+                if (sel) {
+                    Array.from(sel.options).forEach(opt => { opt.selected = val.includes(opt.value); });
+                }
+            }
+        }
+        
+        drawPlot();
+        renderTabs();
+    }
+
+    function saveTabStateAndDraw(tabId) {
+        const tab = plotTabs.find(t => t.id === tabId);
+        if (!tab) return;
+
+        tab.xAxis = dom.xAxisSelect.value;
+        tab.leftYAxes = Array.from(dom.leftYAxisSelect.selectedOptions).map(o => o.value);
+        tab.rightYAxes = Array.from(dom.rightYAxisSelect.selectedOptions).map(o => o.value);
+        tab.grouping = Array.from(dom.groupingSelect.selectedOptions).map(o => o.value);
+        tab.chartType = dom.chartTypeSelect.value;
+        tab.showOutliers = dom.outlierToggle.checked;
+        tab.showDataPoints = dom.showDataPointsToggle.checked;
+        tab.slopeModeEnabled = dom.slopeModeToggle.checked;
+        tab.showBarValues = dom.showBarValuesToggle.checked;
+
+        
+        tab.filters = {};
+        headers.forEach(h => {
+            const minInput = document.getElementById(`filter_min_${h}`);
+            const maxInput = document.getElementById(`filter_max_${h}`);
+            const sel = document.getElementById(`filter_cat_${h}`);
+            if (minInput && maxInput && minInput.value !== '' && maxInput.value !== '') {
+                tab.filters[h] = { min: parseFloat(minInput.value), max: parseFloat(maxInput.value) };
+            } else if (sel) {
+                tab.filters[h] = Array.from(sel.selectedOptions).map(o => o.value);
+            }
+        });
+        
+        tab.customTitles.title = dom.customTitle.value;
+        tab.customTitles.xaxis = document.getElementById('customXAxisTitle')?.value || '';
+        
+        let yAxisCounter = 1;
+        tab.leftYAxes.forEach(() => {
+            const axisId = yAxisCounter === 1 ? 'y' : `y${yAxisCounter}`;
+            const axisKey = `${axisId}axis`;
+            tab.customTitles[axisKey] = document.getElementById(`custom_${axisKey}_Title`)?.value || '';
+            yAxisCounter += 2;
+        });
+        yAxisCounter = 2;
+        tab.rightYAxes.forEach(() => {
+            const axisId = `y${yAxisCounter}`;
+            const axisKey = `${axisId}axis`;
+            tab.customTitles[axisKey] = document.getElementById(`custom_${axisKey}_Title`)?.value || '';
+            yAxisCounter += 2;
+        });
+
+        drawPlot(tab);
+    }
+    
+    // --- Plotting ---
+
+    function buildTracesAndLayout(data, xKey, leftYKeys, rightYKeys, groupingKeys, chartType, showOutliers, showDataPoints, showBarValues, legendStyles) {
+        const traces = [];
+        const layout = {};
+        const defaultSymbols = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'star', 'hexagon', 'pentagon'];
+        const xIsCategorical = !isNumericArray(data.map(d => d[xKey]));
+
+        const groups = {};
+        if (groupingKeys.length === 0) {
+            groups['All Data'] = data;
+        } else {
+            data.forEach(d => {
+                const groupName = groupingKeys.map(k => (d[k] ?? 'Unknown')).join(', ');
+                if (!groups[groupName]) groups[groupName] = [];
+                groups[groupName].push(d);
+            });
+        }
+        
+        const groupNames = Object.keys(groups);
+        const numGroups = groupNames.length;
+        const xCategories = xIsCategorical ? [...new Set(data.map(d => d[xKey]))].sort() : [];
+        const xMap = {};
+        xCategories.forEach((cat, i) => xMap[cat] = i);
+
+        const processYKey = (yKey, axisId, axisSide, axisPosition) => {
+            layout[axisId === 'y' ? 'yaxis' : `yaxis${axisId.substring(1)}`] = {
+                title: { text: yKey },
+                overlaying: axisId === 'y' ? undefined : 'y',
+                side: axisSide,
+                position: axisPosition,
+                zeroline: false
+            };
+            
+            groupNames.forEach((groupName, groupIdx) => {
+                const groupData = groups[groupName];
+                let legendKey = `${groupName} - ${yKey}`;
+                const customStyle = legendStyles[legendKey] || {};
+                const symbol = customStyle.symbol || defaultSymbols[groupIdx % defaultSymbols.length];
+                
+                if ((chartType === 'box' || chartType === 'violin') && showDataPoints) {
+                    const validYData = groupData.map(d => d[yKey]).filter(y => y !== null && y !== undefined && y !== '' && !isNaN(y));
+                    const pointCount = validYData.length;
+                    legendKey += ` (n=${pointCount})`;
+                }
+                
+                const traceBase = {
+                    name: legendKey,
+                    yaxis: axisId,
+                    marker: { 
+                        color: customStyle.color || getRandomColor(legendKey),
+                        symbol: symbol,
+                    }
+                };
+                
+                if (chartType === 'box' || chartType === 'violin') {
+                    traces.push({ 
+                        ...traceBase, 
+                        x: groupData.map(d => d[xKey]), 
+                        y: groupData.map(d => d[yKey]), 
+                        type: chartType, 
+                        boxpoints: chartType === 'box' ? (showOutliers ? 'outliers' : false) : (showOutliers ? 'all' : 'outliers'), // Show all points for violin
+                        pointpos: 0 // Center points for violin
+                    });
+
+                } else if (chartType === 'bar') {
+                    const xGrouped = {};
+                    groupData.forEach(d => {
+                        const xVal = d[xKey] ?? 'Unknown';
+                        if (!xGrouped[xVal]) xGrouped[xVal] = [];
+                        if(!isNaN(d[yKey])) xGrouped[xVal].push(d[yKey]);
+                    });
+                    const xs = Object.keys(xGrouped).sort();
+                    const ys = xs.map(x => xGrouped[x].length > 0 ? xGrouped[x].reduce((a,b) => a+b, 0) / xGrouped[x].length : 0);
+                    
+                    const trace = { ...traceBase, x: xs, y: ys, type: 'bar' };
+                    
+                    // Add text annotations for bar values if enabled
+                    if (showBarValues) {
+                        trace.text = ys.map(y => y.toFixed(2));
+                        trace.textposition = 'outside';
+                        trace.textfont = {
+                            size: 12,
+                            color: currentTheme === 'dark' ? '#e2e8f0' : '#334155'
+                        };
+                    }
+                    
+                    traces.push(trace);
+                } else if (chartType === 'scatter' || chartType === 'line') {
+                    let xVals = groupData.map(d => d[xKey]);
+                    let yVals = groupData.map(d => d[yKey]);
+                    
+                    if (chartType === 'line' && !xIsCategorical) { // Sort line plot data by X if X is numeric
+                        const sortedPairs = groupData.map(d => [d[xKey], d[yKey]])
+                            .filter(p => p[0] !== null && p[1] !== null && !isNaN(p[0]))
+                            .sort((a, b) => a[0] - b[0]);
+                        xVals = sortedPairs.map(p => p[0]);
+                        yVals = sortedPairs.map(p => p[1]);
+                    }
+
+                    if (chartType === 'scatter' && numGroups > 1 && xIsCategorical) {
+                        const jitterWidth = 0.8; 
+                        const groupWidth = jitterWidth / numGroups;
+                        const offset = (groupIdx - (numGroups - 1) / 2) * groupWidth;
+                        xVals = groupData.map(d => xMap[d[xKey]] + offset);
+                    }
+                    
+                    traces.push({ ...traceBase, x: xVals, y: yVals, mode: chartType === 'scatter' ? 'markers' : 'lines+markers', type: 'scatter' });
+                }
+            });
+        };
+
+        // Left axes: y, y3, y5, ...
+        leftYKeys.forEach((yKey, i) => {
+            const axisNum = i * 2 + 1;
+            const axisId = axisNum === 1 ? 'y' : `y${axisNum}`;
+            const position = 0 + (i * 0.08); // Spread axes
+            processYKey(yKey, axisId, 'left', position);
+        });
+
+        // Right axes: y2, y4, y6, ...
+        rightYKeys.forEach((yKey, i) => {
+            const axisNum = (i + 1) * 2;
+            const axisId = `y${axisNum}`;
+            const position = 1 - (i * 0.08); // Spread axes
+            processYKey(yKey, axisId, 'right', position);
+        });
+        
+        if(leftYKeys.length === 0 && rightYKeys.length > 0) {
+            // Promote first right axis to be the main Y axis
+            layout.yaxis = { ...layout.yaxis2, title: { text: '' }, showticklabels: false, side: 'left' };
+            delete layout.yaxis2;
+            traces.forEach(t => { if(t.yaxis === 'y2') t.yaxis = 'y'; });
+        }
+        
+        if (chartType === 'scatter' && numGroups > 1 && xIsCategorical) {
+            layout.xaxis = {
+                tickvals: xCategories.map((_, i) => i),
+                ticktext: xCategories
+            };
+        }
+
+        return { traces, layoutYAxes: layout };
+    }
+
+    function drawPlot(tab) {
+        if (!parsedData.length) {
+            Plotly.purge(dom.plotDiv);
+            return;
+        }
+        tab = tab || plotTabs.find(t => t.id === activeTabId);
+        if (!tab) return;
+        
+        const isBoxPlot = tab.chartType === 'box';
+        const isBoxLike = isBoxPlot || tab.chartType === 'violin';
+        const isBarPlot = tab.chartType === 'bar';
+        
+        document.getElementById('outlierToggleContainer').style.display = isBoxPlot ? 'flex' : 'none';
+        document.getElementById('dataPointsToggleContainer').style.display = isBoxLike ? 'flex' : 'none';
+        document.getElementById('showBarValuesToggleContainer').style.display = isBarPlot ? 'flex' : 'none';
+
+        const xKey = tab.xAxis;
+        const leftYKeys = tab.leftYAxes;
+        const rightYKeys = tab.rightYAxes;
+
+        if (!xKey || (leftYKeys.length === 0 && rightYKeys.length === 0)) {
+            Plotly.purge(dom.plotDiv);
+            dom.plotDiv.innerHTML = `<div class="empty-state">Please select at least one X and one Y axis to generate a plot.</div>`;
+            return;
+        }
+
+        const filteredData = filterData(parsedData);
+        if (!filteredData.length) {
+            Plotly.purge(dom.plotDiv);
+            dom.plotDiv.innerHTML = `<div class="empty-state">Your current filters result in no data to display. Please adjust your filters.</div>`;
+            return;
+        }
+
+        const { traces, layoutYAxes } = buildTracesAndLayout(filteredData, xKey, leftYKeys, rightYKeys, tab.grouping, tab.chartType, tab.showOutliers, tab.showDataPoints, tab.showBarValues, tab.legendStyles);
+        
+        // --- NEW: Dark Mode Plot Layout ---
+        const isDark = currentTheme === 'dark';
+        const bgColor = isDark ? '#0f172a' : '#ffffff';
+        const textColor = isDark ? '#e2e8f0' : '#1e293b';
+        const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+        const layout = {
+            title: { text: `Title`, font: { size: 18, family: 'Inter, sans-serif', color: textColor } },
+            xaxis: { title: { text: xKey }, tickangle: -45, domain: [0.1 * leftYKeys.length, 1 - 0.1 * rightYKeys.length], color: textColor, gridcolor: gridColor, linecolor: gridColor },
+            margin: { t: 50, b: 120, l: 60, r: 60 },
+            height: 600,
+            boxmode: ['box', 'violin', 'bar'].includes(tab.chartType) ? 'group' : undefined,
+            legend: { orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center', font: { color: textColor } },
+            showlegend: true, /* <-- ADDED THIS LINE */
+            plot_bgcolor: bgColor,
+            paper_bgcolor: bgColor
+        };
+        Object.assign(layout, layoutYAxes);
+        
+        // Apply dark mode to all axes
+        Object.keys(layout).filter(k => k.startsWith('yaxis')).forEach(axisKey => {
+            layout[axisKey].color = textColor;
+            layout[axisKey].gridcolor = gridColor;
+            layout[axisKey].linecolor = gridColor;
+        });
+        
+        const allYKeys = [...leftYKeys, ...rightYKeys];
+
+        layout.title.text = tab.customTitles.title || `${capitalize(tab.chartType)} Plot: ${allYKeys.join(', ')} vs ${xKey}`;
+        if(layout.xaxis.title) layout.xaxis.title.text = tab.customTitles.xaxis || xKey;
+        
+        Object.keys(layout).filter(k => k.startsWith('yaxis')).forEach(axisKey => {
+            if (!layout[axisKey].title) return;
+            const axisName = axisKey.replace('yaxis', 'y');
+            const customTitleKey = `${axisName}axis`;
+            const originalTitle = layout[axisKey].title.text;
+            if (tab.customTitles[customTitleKey] !== undefined) {
+                layout[axisKey].title.text = tab.customTitles[customTitleKey] || originalTitle;
+            }
+        });
+        
+        layout.shapes = tab.annotations.map(a => ({
+            type: 'line',
+            x0: a.axis === 'y' ? 0 : a.value, y0: a.axis === 'x' ? 0 : a.value,
+            x1: a.axis === 'y' ? 1 : a.value, y1: a.axis === 'x' ? 1 : a.value,
+            xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
+            line: { color: a.color, width: 2, dash: a.style }
+        }));
+
+        const manualAnnotations = tab.annotations.filter(a => a.text).map(a => ({
+            x: a.axis === 'y' ? 0.98 : a.value, y: a.axis === 'x' ? 0.98 : a.value,
+            xref: a.axis === 'y' ? 'paper' : 'x', yref: a.axis === 'x' ? 'paper' : 'y',
+            text: a.text, showarrow: false, xanchor: 'right', yanchor: 'top', font: { color: a.color }
+        }));
+        
+        layout.annotations = manualAnnotations;
+
+        const xIsNum = isNumericArray(filteredData.map(d => d[xKey]));
+        const yIsNum = allYKeys.every(yKey => isNumericArray(filteredData.map(d => d[yKey])));
+        const isSlopeEligible = (tab.chartType === 'line' || tab.chartType === 'scatter') && xIsNum && yIsNum;
+
+        // NEW LOGIC: Enable toggle if eligible, then check toggle state
+        dom.slopeModeToggle.disabled = !isSlopeEligible;
+        const isSlopeActive = isSlopeEligible && tab.slopeModeEnabled;
+
+        layout.dragmode = isSlopeActive ? 'select' : 'zoom';
+        dom.slopeSection.classList.toggle('hidden', !isSlopeActive);
+        if(isSlopeActive) dom.slopeResults.innerHTML = '<div class="empty-state">No range selected yet.</div>';
+
+        tab.plotTraces = traces;
+        tab.plotLayout = layout;
+
+        Plotly.newPlot(dom.plotDiv, traces, layout, { responsive: true, displaylogo: false });
+        renderCustomizationPanel(tab);
+        
+        dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_selected');
+        dom.plotDiv.removeAllListeners && dom.plotDiv.removeAllListeners('plotly_deselect');
+        
+        if (isSlopeActive) {
+            dom.plotDiv.on('plotly_selected', handleSelection);
+            dom.plotDiv.on('plotly_deselect', () => {
+                dom.slopeResults.innerHTML = '<div class="empty-state">Selection cleared.</div>';
+            });
+        }
+    }
+    
+    // --- Customization Panel Logic ---
+    function renderCustomizationPanel(tab) {
+        renderTitlesEditor(tab);
+        renderLegendEditor(tab);
+        renderAnnotationsEditor(tab);
+    }
+
+    function renderTitlesEditor(tab) {
+        dom.customTitle.value = tab.customTitles.title || '';
+        dom.axisTitlesContainer.innerHTML = '';
+        const xAxisDiv = document.createElement('div');
+        xAxisDiv.innerHTML = `<label for="customXAxisTitle" class="block font-medium mb-1 text-sm">X-Axis Title:</label>
+                              <input type="text" id="customXAxisTitle" class="form-input" value="${tab.customTitles.xaxis || ''}" placeholder="${tab.xAxis}">`;
+        dom.axisTitlesContainer.appendChild(xAxisDiv);
+
+        let yAxisCounter = 1;
+        tab.leftYAxes.forEach((y) => {
+            const axisId = yAxisCounter === 1 ? 'y' : `y${yAxisCounter}`;
+            const axisKey = `${axisId}axis`;
+            const yAxisDiv = document.createElement('div');
+            yAxisDiv.innerHTML = `<label for="custom_${axisKey}_Title" class="block font-medium mb-1 text-sm">Left Y-Axis Title (${y}):</label>
+                                  <input type="text" id="custom_${axisKey}_Title" data-axis-key="${axisKey}" class="form-input" value="${tab.customTitles[axisKey] || ''}" placeholder="${y}">`;
+            dom.axisTitlesContainer.appendChild(yAxisDiv);
+            yAxisCounter += 2;
+        });
+
+        yAxisCounter = 2;
+        tab.rightYAxes.forEach((y) => {
+            const axisId = `y${yAxisCounter}`;
+            const axisKey = `${axisId}axis`;
+            const yAxisDiv = document.createElement('div');
+            yAxisDiv.innerHTML = `<label for="custom_${axisKey}_Title" class="block font-medium mb-1 text-sm">Right Y-Axis Title (${y}):</label>
+                                  <input type="text" id="custom_${axisKey}_Title" data-axis-key="${axisKey}" class="form-input" value="${tab.customTitles[axisKey] || ''}" placeholder="${y}">`;
+            dom.axisTitlesContainer.appendChild(yAxisDiv);
+            yAxisCounter += 2;
+        });
+        
+        // Add listeners to new inputs
+        dom.axisTitlesContainer.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => saveTabStateAndDraw(activeTabId));
+        });
+    }
+
+    function renderLegendEditor(tab) {
+        dom.legendEditorContainer.innerHTML = '';
+        if (!tab.plotTraces || tab.plotTraces.length === 0) {
+            dom.legendEditorContainer.innerHTML = '<div class="empty-state col-span-full">Plot must be generated to see legends.</div>';
+            return;
+        }
+
+        const symbolOptions = ['circle', 'square', 'diamond', 'cross', 'x', 'triangle-up', 'star', 'hexagon', 'pentagon'].map(s => `<option value="${s}">${capitalize(s)}</option>`).join('');
+
+        tab.plotTraces.forEach((trace, index) => {
+            const legendKey = trace.name;
+            const style = tab.legendStyles[legendKey] || {};
+            const currentColor = style.color || trace.marker.color;
+            const currentSymbol = style.symbol || trace.marker.symbol;
+
+            const editorDiv = document.createElement('div');
+            editorDiv.className = 'flex items-center gap-2 text-sm';
+            editorDiv.innerHTML = `
+                <input type="color" value="${(currentColor || '#000000').slice(0, 7)}" data-trace-index="${index}" class="p-0 h-6 w-6 block bg-white border border-slate-300 dark:border-slate-600 cursor-pointer rounded-md">
+                <select data-trace-index="${index}" class="form-select !py-1 text-xs">
+                  ${symbolOptions}
+                </select>
+                <span class="truncate" title="${legendKey}">${legendKey}</span>
+            `;
+            editorDiv.querySelector('select').value = currentSymbol;
+            dom.legendEditorContainer.appendChild(editorDiv);
+        });
+    }
+    
+    function renderAnnotationsEditor(tab) {
+        dom.annotationsListContainer.innerHTML = '';
+        if (tab.annotations.length === 0) {
+            dom.annotationsListContainer.innerHTML = '<div class="empty-state">No annotations yet.</div>';
+            return;
+        }
+        tab.annotations.forEach((a, index) => {
+            const annoDiv = document.createElement('div');
+            annoDiv.className = 'flex items-center justify-between text-sm p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700';
+            annoDiv.innerHTML = `
+                <span>${a.axis.toUpperCase()}-axis line at ${a.value} ${a.text ? `(${a.text})` : ''}</span>
+                <button data-index="${index}" class="font-bold text-red-500 hover:text-red-700 px-2">&times;</button>
+            `;
+            dom.annotationsListContainer.appendChild(annoDiv);
+        });
+    }
+
+    // --- Slope Calculation ---
+
+    function calculateLinReg(xData, yData) {
+        const n = xData.length;
+        if (n < 2) return { slope: NaN, intercept: NaN, r2: NaN };
+        const sumX = xData.reduce((a, b) => a + b, 0);
+        const sumY = yData.reduce((a, b) => a + b, 0);
+        const sumXY = xData.map((x, i) => x * yData[i]).reduce((a, b) => a + b, 0);
+        const sumX2 = xData.map(x => x * x).reduce((a, b) => a + b, 0);
+        const sumY2 = yData.map(y => y * y).reduce((a, b) => a + b, 0);
+        const denominator = (n * sumX2) - (sumX * sumX);
+        if (denominator === 0) return { slope: NaN, intercept: NaN, r2: NaN };
+        const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+        const intercept = (sumY / n) - (slope * sumX / n);
+        const r2_num = Math.pow((n * sumXY) - (sumX * sumY), 2);
+        const r2_den = ((n * sumX2) - Math.pow(sumX, 2)) * ((n * sumY2) - Math.pow(sumY, 2));
+        const r2 = r2_den === 0 ? NaN : r2_num / r2_den;
+        return { slope, intercept, r2 };
+    }
+
+    function handleSelection(eventData) {
+        if (!eventData || !eventData.points || eventData.points.length === 0) {
+            dom.slopeResults.innerHTML = '<div class="empty-state">Invalid selection.</div>';
+            return;
+        }
+        dom.slopeResults.innerHTML = '';
+        const activeTab = plotTabs.find(t => t.id === activeTabId);
+        if (!activeTab) return;
+
+        const pointsByTrace = {};
+        eventData.points.forEach(p => {
+            if (!pointsByTrace[p.curveNumber]) pointsByTrace[p.curveNumber] = { x: [], y: [] };
+            pointsByTrace[p.curveNumber].x.push(p.x);
+            pointsByTrace[p.curveNumber].y.push(p.y);
+        });
+
+        for (const curveIdx in pointsByTrace) {
+            const traceData = pointsByTrace[curveIdx];
+            const traceName = activeTab.plotTraces[curveIdx].name || `Trace ${curveIdx}`;
+            if (traceData.x.length < 2) continue;
+
+            const { slope, intercept, r2 } = calculateLinReg(traceData.x, traceData.y);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'mb-2 p-2 slope-result-card rounded shadow-sm';
+            resultDiv.innerHTML = `
+                <p class="font-semibold text-indigo-800 dark:text-indigo-300">${traceName}:</p>
+                <p class="ml-4"><strong>Slope:</strong> ${slope.toFixed(4)}</p>
+                <p class="ml-4"><strong>Y-Intercept:</strong> ${intercept.toFixed(4)}</p>
+                <p class="ml-4"><strong>R-squared:</strong> ${r2.toFixed(4)}</p>
+                <p class="ml-4 text-xs text-slate-500 dark:text-slate-400">(${traceData.x.length} points selected)</p>`;
+            dom.slopeResults.appendChild(resultDiv);
+        }
+        if (dom.slopeResults.innerHTML === '') {
+            dom.slopeResults.innerHTML = '<div class="empty-state">Not enough points selected per trace for calculation.</div>';
+        }
+    }
+
+    // --- Data Loading and Initialization ---
+
+    function loadCurrentData() {
+        try {
+            parsedData = parseTabDelimited(dom.dataInput.value);
+            if (!parsedData.length) throw new Error('No data rows found.');
+            
+            populateSelect(dom.xAxisSelect, headers);
+            populateSelect(dom.leftYAxisSelect, headers, true);
+            populateSelect(dom.rightYAxisSelect, headers, true);
+            populateSelect(dom.groupingSelect, headers, true);
+            
+            enableControls(true);
+
+            updateDataPreview();
+            updateDataStats(); // This now uses the refactored stats function
+
+            // === NEW: Calculate and render correlation matrix ===
+            const numericHeaders = headers.filter(h => isNumericArray(parsedData.map(d => d[h])));
+            const matrix = calculateCorrelationMatrix(parsedData, numericHeaders);
+            renderCorrelationMatrix(matrix, numericHeaders);
+            // === END NEW ===
+
+            if (plotTabs.length === 0) {
+                const firstTab = createNewTab('Plot 1');
+                plotTabs.push(firstTab);
+            }
+            // This will auto-select smart defaults
+            activateTab(plotTabs[0].id);
+            
+            showNotification('Data Loaded', `${parsedData.length} rows parsed successfully.`, 'success');
+
+        } catch (err) {
+            showNotification('Parsing Error', err.message, 'error');
+            enableControls(false);
+            Plotly.purge(dom.plotDiv);
+        }
+    }
+
+    function enableControls(enabled) {
+        // MODIFIED: Added analyzePlotBtn, slopeModeToggle, and showBarValuesToggle
+        const elements = [dom.xAxisSelect, dom.leftYAxisSelect, dom.rightYAxisSelect, dom.groupingSelect, dom.chartTypeSelect, dom.outlierToggle, dom.showDataPointsToggle, dom.slopeModeToggle, dom.showBarValuesToggle, dom.exportPlotBtn, dom.exportDataBtn, dom.saveToReportBtn, dom.addPlotTabBtn, dom.analyzePlotBtn];
+        elements.forEach(el => el.disabled = !enabled);
+        dom.generateReportBtn.disabled = savedReportViews.length === 0;
+    }
+
+    function exportFilteredData() {
+      if (!parsedData.length) {
+        showNotification('No data to export', 'error');
+        return;
+      }
+      
+      const filtered = filterData(parsedData);
+      
+      const csvHeader = headers.join(',');
+      const csvRows = filtered.map(row => {
+        return headers.map(header => {
+          let val = row[header];
+          if (typeof val === 'string' && val.includes(',')) {
+            return `"${val}"`;
+          }
+          return val;
+        }).join(',');
+      });
+      
+      const csvContent = [csvHeader, ...csvRows].join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'filtered_data.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification('Export Successful', 'Filtered data has been downloaded as a CSV.', 'success');
+    }
+
+    // === NEW: Gemini API Call Functions ===
+
+    /**
+     * Fetches data with exponential backoff retry logic.
+     */
+    async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            if (retries > 0) {
+                await new Promise(res => setTimeout(res, delay));
+                return fetchWithRetry(url, options, retries - 1, delay * 2);
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    /**
+     * Calls the Gemini API.
+     */
+    async function callGeminiAPI(systemPrompt, userQuery) {
+        const apiKey = ""; // Leave empty, will be handled by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        const payload = {
+            contents: [{
+                parts: [{ text: userQuery }]
+            }],
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
+        };
+
+        const options = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        };
+
+        const result = await fetchWithRetry(apiUrl, options);
+        const candidate = result.candidates?.[0];
+        
+        if (candidate && candidate.content?.parts?.[0]?.text) {
+            return candidate;
+        } else {
+            throw new Error('Invalid response from Gemini API.');
+        }
+    }
+
+    /**
+     * Handles the 'Analyze Plot' button click.
+     */
+    async function handlePlotAnalysis() {
+        const activeTab = plotTabs.find(t => t.id === activeTabId);
+        if (!activeTab) {
+            return showNotification('Error', 'No active plot to analyze.', 'error');
+        }
+
+        dom.geminiLoadingIndicator.classList.remove('hidden');
+        dom.geminiAnalysisResult.innerHTML = '';
+        dom.analyzePlotBtn.disabled = true;
+
+        try {
+            const filteredData = filterData(parsedData);
+            if (filteredData.length === 0) {
+              throw new Error("There is no data to analyze with the current filters.");
+            }
+            
+            const filteredStats = generateDataStats(filteredData);
+
+            const systemPrompt = `You are a helpful and concise data analyst. A user is providing you with the configuration of a plot they just made. Your goal is to provide a brief, one-paragraph insight based on this configuration. Do not just list the settings; explain what this specific plot helps them *understand* or *look for*. For example: "This box plot allows you to compare the spread and median of [Y-Axis] across the different [X-Axis] categories..." or "This scatter plot is ideal for spotting a potential relationship, like a correlation or clusters, between [X-Axis] and [Y-Axis]..."`;
+            
+            const userQuery = `
+              I've created a plot with the following settings:
+              - Plot Type: ${activeTab.chartType}
+              - X-Axis: ${activeTab.xAxis}
+              - Y-Axes: ${[...activeTab.leftYAxes, ...activeTab.rightYAxes].join(', ')}
+              - Grouped By: ${activeTab.grouping.join(', ') || 'None'}
+              
+              Here are the summary statistics for the data *being plotted*:
+              ${JSON.stringify(filteredStats, null, 2)}
+              
+              Please provide a brief, one-paragraph analysis of what I might learn from this specific visualization.
+            `;
+
+            const candidate = await callGeminiAPI(systemPrompt, userQuery);
+            const text = candidate.content.parts[0].text;
+            
+            // Simple markdown-to-HTML (for newlines)
+            dom.geminiAnalysisResult.innerHTML = `<p>${text.replace(/\n/g, '</p><p>')}</p>`;
+
+        } catch (error) {
+            showNotification('AI Analysis Error', error.message, 'error');
+            dom.geminiAnalysisResult.innerHTML = `<p class="empty-state !p-0 !text-left text-red-400">Analysis failed: ${error.message}</p>`;
+        } finally {
+            dom.geminiLoadingIndicator.classList.add('hidden');
+            dom.analyzePlotBtn.disabled = false;
+        }
+    }
+
+    // --- Event Listeners ---
+
+    dom.loadDataBtn.addEventListener('click', loadCurrentData);
+    dom.exportDataBtn.addEventListener('click', exportFilteredData); 
+
+    dom.fileInput.addEventListener('change', evt => {
+        if (!evt.target.files.length) return;
+        const file = evt.target.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+            dom.dataInput.value = e.target.result;
+            loadCurrentData();
+        };
+        reader.onerror = () => showNotification('File Error', 'Could not read the selected file.', 'error');
+        reader.readAsText(file);
+        evt.target.value = ''; 
+    });
+
+    [dom.xAxisSelect, dom.leftYAxisSelect, dom.rightYAxisSelect, dom.groupingSelect, dom.chartTypeSelect, dom.outlierToggle, dom.showDataPointsToggle, dom.slopeModeToggle, dom.showBarValuesToggle, dom.customTitle].forEach(el => {
+        el.addEventListener('change', () => saveTabStateAndDraw(activeTabId));
+    });
+
+    dom.addPlotTabBtn.addEventListener('click', () => {
+      const newTab = createNewTab();
+      const activeTab = plotTabs.find(t => t.id === activeTabId);
+      if(activeTab) {
+        // Deep copy the active tab config
+        Object.assign(newTab, JSON.parse(JSON.stringify(activeTab)));
+        newTab.id = Date.now() + Math.random(); // Ensure new ID
+        newTab.name = `Plot ${plotTabs.length + 1}`; // Ensure new name
+        newTab.customTitles.title = ''; // Clear title
+      }
+      plotTabs.push(newTab);
+      activateTab(newTab.id);
+    });
+    
+    // === NEW: Event Listener for Main Config Tabs ===
+    document.getElementById('configTabsContainer').addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+            const panelId = e.target.dataset.tabPanel;
+            if (!panelId) return;
+
+            // Update tabs
+            document.getElementById('configTabsContainer').querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            // Update panels
+            document.getElementById('configPanelsContainer').querySelectorAll('.config-panel').forEach(panel => {
+                panel.classList.toggle('hidden', panel.id !== panelId);
+            });
+        }
+    });
+
+    // === MODIFIED: Event Listener for Customization Sub-Tabs (uses new class) ===
+    dom.customizationTabsContainer.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+            const tabName = e.target.dataset.tab;
+            // UPDATE CLASS
+            dom.customizationTabsContainer.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            // This logic is fine, it toggles the 'hidden' class on the panels
+            ['titlesPanel', 'legendsPanel', 'annotationsPanel'].forEach(id => {
+                dom[id].classList.toggle('hidden', id !== `${tabName}Panel`);
+            });
+        }
+    });
+
+    dom.titlesPanel.addEventListener('input', e => {
+        if (e.target.tagName === 'INPUT') {
+            saveTabStateAndDraw(activeTabId);
+        }
+    });
+    
+    dom.legendEditorContainer.addEventListener('change', e => {
+        const activeTab = plotTabs.find(t => t.id === activeTabId);
+        if (!activeTab) return;
+        const traceIndex = parseInt(e.target.dataset.traceIndex, 10);
+        if (isNaN(traceIndex) || !activeTab.plotTraces[traceIndex]) return;
+        const legendKey = activeTab.plotTraces[traceIndex].name;
+        
+        if (!activeTab.legendStyles[legendKey]) activeTab.legendStyles[legendKey] = {};
+
+        const update = {};
+        if (e.target.type === 'color') {
+            activeTab.legendStyles[legendKey].color = e.target.value;
+            update['marker.color'] = e.target.value;
+        } else if (e.target.tagName === 'SELECT') {
+             activeTab.legendStyles[legendKey].symbol = e.target.value;
+             update['marker.symbol'] = e.target.value;
+        }
+        Plotly.restyle(dom.plotDiv, update, [traceIndex]);
+    });
+    
+    dom.addAnnotationBtn.addEventListener('click', () => {
+        const activeTab = plotTabs.find(t => t.id === activeTabId);
+        if (!activeTab) return;
+        const value = parseFloat(dom.annotationValue.value);
+        if (isNaN(value)) {
+            return showNotification('Invalid Input', 'Annotation value must be a number.', 'error');
+        }
+        
+        activeTab.annotations.push({
+            axis: dom.annotationAxis.value,
+            value: value,
+            text: dom.annotationText.value,
+            style: dom.annotationStyle.value,
+            color: dom.annotationColor.value,
+        });
+
+        dom.annotationValue.value = '';
+        dom.annotationText.value = '';
+        drawPlot(activeTab); 
+    });
+
+    dom.annotationsListContainer.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+             const activeTab = plotTabs.find(t => t.id === activeTabId);
+             if (!activeTab) return;
+             const index = parseInt(e.target.dataset.index, 10);
+             activeTab.annotations.splice(index, 1);
+             drawPlot(activeTab);
+        }
+    });
+
+    // --- PDF Reporting & Exporting ---
+    dom.exportPlotBtn.addEventListener('click', () => {
+        const activeTab = plotTabs.find(t => t.id === activeTabId);
+        if (!activeTab || !activeTab.plotLayout.title) return;
+        const filename = (activeTab.plotLayout.title.text || 'plot').replace(/ /g, '_');
+        Plotly.downloadImage(dom.plotDiv, {format: 'png', width: 1200, height: 800, filename: filename});
+    });
+
+    dom.saveToReportBtn.addEventListener('click', async () => {
+      if (!activeTabId) return showNotification('Error', 'No active plot tab to save.', 'error');
+      const tab = plotTabs.find(t => t.id === activeTabId);
+      if (!tab) return;
+
+      try {
+        const imgData = await Plotly.toImage(dom.plotDiv, {format:'png', width: 900, height: 600});
+        savedReportViews.push({ ...tab, imgData });
+        renderSavedViews();
+        dom.generateReportBtn.disabled = false;
+        showNotification('View Saved', `"${tab.name}" has been added to the report.`, 'success');
+      } catch(e) {
+        showNotification('Image Error', 'Could not capture plot image: ' + e.message, 'error');
+      }
+    });
+
+    function renderSavedViews() {
+        dom.savedViewsList.innerHTML = '';
+        if (savedReportViews.length === 0) {
+            dom.savedViewsList.innerHTML = '<div class="empty-state">No saved views yet.</div>';
+            dom.generateReportBtn.disabled = true;
+            return;
+        }
+        savedReportViews.forEach((view, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between mb-2 gap-2 p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700';
+            div.innerHTML = `
+                <div class="flex items-center gap-3 flex-grow">
+                    <input type="checkbox" checked id="viewCheckbox_${idx}" class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                    <label for="viewCheckbox_${idx}" class="text-sm font-medium cursor-pointer">${view.name} - ${view.chartType}</label>
+                </div>
+                <button title="Remove" class="text-slate-400 hover:text-red-600 transition-colors" data-index="${idx}">&times;</button>
+            `;
+            div.querySelector('button').onclick = (e) => {
+                const indexToRemove = parseInt(e.currentTarget.dataset.index, 10);
+                savedReportViews.splice(indexToRemove, 1);
+                renderSavedViews();
+            };
+            dom.savedViewsList.appendChild(div);
+        });
+    }
+
+    dom.generateReportBtn.addEventListener('click', () => {
+        const selectedViews = savedReportViews.filter((_, idx) => document.getElementById(`viewCheckbox_${idx}`).checked);
+        if (selectedViews.length === 0) return showNotification('No Selection', 'Please select at least one saved view for the report.', 'error');
+        
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+        const margin = 40;
+        const imgWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+        const imgHeight = imgWidth * (600 / 900);
+
+        selectedViews.forEach((view, idx) => {
+            if (idx > 0) pdf.addPage();
+            pdf.setFontSize(16).text(view.plotLayout.title.text, margin, margin - 15);
+            pdf.setFontSize(10);
+
+            let axesInfo = [`X-Axis: ${view.xAxis}`];
+            if (view.leftYAxes.length > 0) axesInfo.push(`Left Y: ${view.leftYAxes.join(', ')}`);
+            if (view.rightYAxes.length > 0) axesInfo.push(`Right Y: ${view.rightYAxes.join(', ')}`);
+            pdf.text(axesInfo.join(' | '), margin, margin + 5);
+
+            if (view.grouping.length > 0) pdf.text(`Grouped By: ${view.grouping.join(', ')}`, margin, margin + 20);
+            pdf.addImage(view.imgData, 'PNG', margin, margin + 40, imgWidth, imgHeight);
+        });
+        pdf.save(`DataPlotter_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    });
+
+    // --- Theme Toggle Logic ---
+    function setTheme(theme) {
+        currentTheme = theme;
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            dom.themeIconSun.classList.add('hidden');
+            dom.themeIconMoon.classList.remove('hidden');
+        } else {
+            document.documentElement.classList.remove('dark');
+            dom.themeIconSun.classList.remove('hidden');
+            dom.themeIconMoon.classList.add('hidden');
+        }
+        // Redraw the active plot with the new theme
+        if (activeTabId) {
+            drawPlot(plotTabs.find(t => t.id === activeTabId));
+        }
+    }
+
+    // --- NEW: Add Gemini listener ---
+    dom.analyzePlotBtn.addEventListener('click', handlePlotAnalysis);
+
+    // --- NEW: Add Theme listener ---
+    dom.themeToggleBtn.addEventListener('click', () => {
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('plotterTheme', newTheme);
+        setTheme(newTheme);
+    });
+
+    // --- Initial Load ---
+    function initialize() {
+      const sampleData = `Displacement,Pull Load (N),Temperature (C),Adhesive,Test Case
+0.1,150,25,Fuller,RT
+0.2,310,25,Fuller,RT
+0.3,450,25,Fuller,RT
+0.4,620,25,Fuller,RT
+0.5,780,25,Fuller,RT
+0.6,900,25,Fuller,RT
+0.1,120,-40,Sika,Cold
+0.2,250,-40,Sika,Cold
+0.3,380,-40,Sika,Cold
+0.4,510,-40,Sika,Cold
+0.5,630,-40,Sika,Cold
+0.6,740,-40,Sika,Cold
+0.1,180,80,Dow,Hot
+0.2,350,80,Dow,Hot
+0.3,530,80,Dow,Hot
+0.4,710,80,Dow,Hot
+0.5,880,80,Dow,Hot
+0.6,1050,80,Dow,Hot`;
+      dom.dataInput.value = sampleData;
+      
+      // Check for saved theme, default to dark
+      const savedTheme = localStorage.getItem('plotterTheme') || 'dark';
+      setTheme(savedTheme);
+      
+      // Auto-load the sample data
+      loadCurrentData();
+    }
+
+    window.onload = initialize;
+  </script>
 </body>
 </html>
